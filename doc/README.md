@@ -10,7 +10,7 @@
 
 | 模块（目录） | 职责 | 主要对象 |
 |---|---|---|
-| `src/domain/` | 图形几何和属性规则、唯一 id、文档树、父子关系及顺序；生成和执行可逆的局部修改 | `SvgDocument`、`Shape`、`Group`、六种内置图形、`ShapeFactory`、`ChangeSet` |
+| `src/domain/` | 图形几何和属性规则、唯一 id、文档树、父子关系及顺序；原子地迁移节点及修改属性；保管已删除对象 | `SvgDocument`、`Shape`、`Group`、六种内置图形、`ShapeFactory`、`ChangeSet`、`TemporaryContainer` |
 | `src/application/` | 命令对象、命令分发、编辑会话、执行流程、撤销重做；定义 SVG 存储接口 | `CommandDispatcher`、`CommandRunner`、`CommandHistory`、`EditorSession`、`SvgRepository` |
 | `src/application/commands/` | 每条命令的参数检查、用例协调和结果生成；属于 application 模块 | `CreateCommand`、`MoveCommand`、`GroupCommand`、`ReadCommand` 等 |
 | `src/infrastructure/svg/` | 文件与 XML 读写；保留子节点顺序，导入时补缺失 id，生成警告 | `FileSvgRepository`、`SvgReader`、`SvgWriter` |
@@ -49,6 +49,7 @@ package "src/domain" as DOMAIN {
   [Shape hierarchy]
   [ShapeFactory]
   [ChangeSet]
+  [TemporaryContainer]
 }
 package "src/infrastructure/svg" as INFRA {
   [FileSvgRepository]
@@ -76,13 +77,15 @@ end note
 
 #### Command：命令对象与撤销重做
 
-`Command` 声明 `execute(session)` 和历史策略。`UndoableCommand` 在此基础上声明 `undo(session)`、`redo(session)`。每条输入创建独立命令实例，禁止把同一个可变命令对象重复用于多条历史记录。
+`Command` 声明 `execute(session)` 和历史策略。`ReversibleCommand` 的执行结果额外包含本次执行即时生成的反向命令。编辑、撤销和重做都通过命令的 `execute` 完成，不要求每条编辑命令分别提供 `undo/redo` 方法。
 
-`EditCommand` 是编辑命令的抽象基类，封装准备修改、执行、撤销和重做的共同流程；具体类负责表达各自的业务操作。`CommandRunner` 调用命令，`CommandHistory` 保存成功执行的编辑命令对象。
+`EditCommand` 是可逆编辑命令的抽象基类，封装准备修改、原子执行和返回反向命令的共同流程。`CommandHistory` 的两个栈均保存“下一次需要执行的命令”：新编辑成功后将其反向命令压入 undo；undo 执行栈顶命令，将当场生成的反向命令压入 redo；redo 对称处理。每次生成一个新命令对象，不把刚执行的旧对象直接搬到另一栈。
+
+例如 delete 执行后 undo 栈保存 RestoreCommand；撤销时执行 RestoreCommand，并立即生成 MoveToTemporaryCommand 放入 redo 栈。redo 的效果是恢复撤销前的状态。[完整伪代码](undo_redo_pseudocode.md)描述栈操作、隐藏容器和对象回收。
 
 | 命令类别 | 计划类 | 历史策略 |
 |---|---|---|
-| 图形编辑 | `CreateCommand`、`DeleteCommand`、`MoveCommand`、`ScaleCommand`、`SetCommand`、`GroupCommand`、`UngroupCommand`、`AddToCommand`、`FrontCommand`、`BackCommand` | 成功后作为一个撤销单元入栈，同时清空 redo 栈 |
+| 图形编辑 | `CreateCommand`、`DeleteCommand`、`MoveCommand`、`ScaleCommand`、`SetCommand`、`GroupCommand`、`UngroupCommand`、`AddToCommand`、`FrontCommand`、`BackCommand` | 成功后生成反向命令，作为一个撤销单元入 undo 栈，同时清空 redo 栈 |
 | 文档操作 | `InitCommand`、`ReadCommand`、`SaveCommand`、带尺寸的 `CanvasCommand` | 成功后建立历史屏障 |
 | 查询 | `TreeCommand`、`ShowCommand`、`HelpCommand`、无尺寸的 `CanvasCommand` | 不入栈，不改变已有历史 |
 | 历史控制 | `UndoCommand`、`RedoCommand` | 调用 `CommandHistory`，自身不入栈 |
@@ -100,37 +103,42 @@ interface Command {
   +execute(session: EditorSession): CommandResult
   +historyPolicy(): HistoryPolicy
 }
-interface UndoableCommand {
-  +undo(session: EditorSession): CommandResult
-  +redo(session: EditorSession): CommandResult
+interface ReversibleCommand {
+  +execute(session: EditorSession): EditResult
+  +retainedNodes(): ReadonlySet<Shape>
 }
-Command <|-- UndoableCommand
+Command <|-- ReversibleCommand
 abstract class EditCommand {
-  -changes: ChangeSet
   #prepare(session: EditorSession): ChangeSet
-  +execute(session: EditorSession): CommandResult
-  +undo(session: EditorSession): CommandResult
-  +redo(session: EditorSession): CommandResult
+  +execute(session: EditorSession): EditResult
 }
-UndoableCommand <|.. EditCommand
+ReversibleCommand <|.. EditCommand
 EditCommand <|-- MoveCommand
 EditCommand <|-- DeleteCommand
 EditCommand <|-- GroupCommand
+EditCommand <|-- RestoreCommand
+EditCommand <|-- MoveToTemporaryCommand
 Command <|.. ReadCommand
+class EditResult {
+  +inverse: ReversibleCommand
+}
+class CommandResult {
+  +feedback: string
+}
+CommandResult <|-- EditResult
 
 class CommandDispatcher
 class CommandRunner
 class EditorSession
 class CommandHistory {
-  -undoStack: UndoableCommand[]
-  -redoStack: UndoableCommand[]
+  -undoStack: ReversibleCommand[]
+  -redoStack: ReversibleCommand[]
   -blockedByIo: boolean
 }
 class ChangeSet {
   -changes: Change[]
   +apply(): void
-  +undo(): void
-  +redo(): void
+  +inverse(): ChangeSet
 }
 interface Change {
   +apply(): void
@@ -142,12 +150,18 @@ class PlacementChange
 Change <|.. AttributeChange
 Change <|.. PlacementChange
 ChangeSet *-- "0..*" Change
-EditCommand *-- ChangeSet
+EditCommand ..> ChangeSet : 准备局部修改
+EditResult --> ReversibleCommand : 当次生成的反向命令
+ReversibleCommand ..> EditResult : execute 返回
 CommandDispatcher ..> Command : 创建
 CommandRunner --> Command : execute
 CommandRunner --> CommandHistory
 CommandRunner --> EditorSession
-CommandHistory o-- "0..*" UndoableCommand : 保留命令
+CommandHistory o-- "0..*" ReversibleCommand : 待执行命令
+EditorSession --> SvgDocument
+SvgDocument *-- TemporaryContainer : 私有隐藏容器
+MoveToTemporaryCommand ..> TemporaryContainer
+RestoreCommand ..> TemporaryContainer
 ReadCommand ..> SvgRepository
 @enduml
 ```
@@ -158,19 +172,27 @@ ReadCommand ..> SvgRepository
 
 | 编辑命令 | 需要保留的记录 | 撤销与重做 |
 |---|---|---|
-| `create` | 创建出的原图形对象、父容器、插入位置 | 撤销时摘出；重做时重新挂入同一对象 |
-| `delete` | 被摘出的原子树对象、原父容器和位置 | 撤销时挂回；重做时摘出；不复制子树 |
+| `create` | 创建出的原图形对象、父容器、插入位置 | 返回移入临时容器的命令；该命令执行后返回恢复命令 |
+| `delete` | 移入临时容器的原子树对象、原父容器和位置 | 返回恢复命令；恢复时返回新的移入临时容器命令 |
 | `move` | 增量参数及本次改变的坐标属性旧值、新值 | 写回旧值或新值 |
 | `scale` | 缩放参数及本次改变的几何属性旧值、新值 | 写回旧值或新值，避免乘倒数带来的浮点误差 |
 | `set` | 属性名、原来是否存在、旧值、新值 | 恢复原值或原本的缺省状态；重做设置新值 |
-| `group` | 新组对象及其位置、每个成员的原父容器和原位置、组内顺序 | 撤销移回成员并移除新组；重做恢复分组 |
-| `ungroup` | 原组对象及其位置、被提升的子节点顺序 | 撤销挂回组并收回子节点；重做再次解散 |
+| `group` | 新组对象及其位置、每个成员的原父容器和原位置、组内顺序 | 撤销移回成员并将新组移入临时容器；执行时生成重做分组命令 |
+| `ungroup` | 移入临时容器的原组对象及其位置、被提升的子节点顺序 | 撤销恢复原组并收回子节点；执行时生成再次解散命令 |
 | `addto` | 节点的原父容器和位置、目标容器和目标位置 | 撤销迁回；重做迁入 |
 | `front/back` | 节点及原位置、目标位置 | 在同一父容器内恢复或调整位置 |
 
-`AttributeChange` 记录一个属性的变化，包含“属性不存在”的状态。`PlacementChange` 记录一个节点从一个父容器及位置迁到另一个位置，父容器可为空以表示摘出或挂入。这些记录仅由领域操作创建，命令不能直接修改节点的内部数组或字段。
+`AttributeChange` 记录一个属性的变化，包含“属性不存在”的状态。`PlacementChange` 记录一个节点从一个父容器及位置迁到另一个位置，位置也可以属于隐藏临时容器。这些记录仅由领域操作创建，命令不能直接修改节点的内部数组或字段。
 
-`ChangeSet` 按顺序执行修改，撤销时按相反顺序回退，重做时再次按顺序执行。一个 `group` 即使包含多次节点迁移，仍然只由一个 `GroupCommand` 入栈。
+`ChangeSet` 用于一次执行内部的原子修改和失败回退。历史层使用当次生成的反向命令；反向命令再次执行时，按此刻被修改的值及位置生成新的反向命令。一个 `group` 即使包含多次节点迁移，其逆操作也包装为一个命令，仅占一个历史单元。
+
+#### 隐藏临时容器
+
+`TemporaryContainer` 由当前文档私有持有，独立于可见 SVG 根；不是普通 `g`，没有可供用户寻址的 id。删除容器时把整棵原子树移入临时容器，保留内部父子关系及对象身份，不逐个复制其子节点。
+
+公共 id 查找仅使用可见树索引；`tree/show/save` 仅遍历可见根。隐藏对象及其子孙不会出现在公开查询和序列化结果中。内部恢复命令持有对象引用和原位置，不能通过普通用户命令访问临时容器。
+
+临时容器按对象身份管理，允许保管不同历史中具有相同 SVG id 的对象；可见树仍要求 id 唯一。恢复前检查整个子树的 id 冲突。新编辑清空 redo 或 I/O 屏障清空历史后，仅释放两栈不再引用的隐藏子树；仍可能恢复的隐藏父容器也必须保留。
 
 #### 失败不改变状态
 
@@ -178,7 +200,7 @@ ReadCommand ..> SvgRepository
 
 应用修改时，如果中途出现异常，`ChangeSet` 回退已经执行的步骤。单个修改必须保证自身失败时不留下部分修改。父指针、子节点顺序和 id 索引由领域对象统一维护；撤销、重做也遵守相同约束。
 
-失败的执行、撤销或重做不改变历史栈。历史管理器先取栈顶对象执行，成功后才移动到另一栈；准备失败的编辑命令不清空 redo 栈。
+失败的执行、撤销或重做不改变历史栈。历史管理器先查看栈顶命令并执行，成功后才弹出原命令、将新生成的反向命令压入另一栈；准备失败的编辑命令不清空 redo 栈。
 
 `read` 先解析并验证一个新文档，全部成功后才替换当前文档；这是导入结果，不是撤销快照。`save` 先生成 XML，再通过同目录临时文件写入和替换目标文件，成功后才更新会话信息及历史屏障。
 
@@ -284,7 +306,7 @@ end note
 | 增加 agent 或鼠标输入渠道 | 命令对象与执行器独立于 REPL；命令接收已解析参数 | 新入口可以直接构造命令；CLI 语法不进入图形模型 |
 | 命令参数和反馈格式变化 | 每条命令独立检查参数；Tokenizer 只处理词法；Presenter 负责排版 | 不引入通用语法引擎，当前命令规模可以由各命令类处理 |
 | SVG 导入导出规则变化 | 存储接口、独立 Reader/Writer、共享图形工厂 | 先支持需求内的 SVG 子集；外部 transform 的支持范围须在实现导入时明确并记录，不能静默丢失图形位置 |
-| 撤销记录的内存或性能需求变化 | 命令局部记录、ChangeSet、集中历史管理器 | 禁止文档快照；暂不实现持久化历史、无限历史和历史分支，后续可增加条数上限 |
+| 撤销记录的内存或性能需求变化 | 即时生成反向命令、集中历史管理器、隐藏临时容器及按历史引用回收 | 禁止文档快照；暂不实现持久化历史、无限历史和历史分支，后续可增加条数上限 |
 | 层级与排列操作增多 | 统一父容器接口和节点位置修改；树不变量集中维护 | 新操作复用节点迁移，不允许直接写 children 数组 |
 | 新存储目标或测试替身 | `SvgRepository` 接口 | 仅实现本地文件；暂不引入数据库、远程服务等额外设施 |
 
@@ -303,6 +325,7 @@ end note
 | 2026-10-13 | 阅读需求并提出初步分层方案；最初建议复制文档以支持事务和撤销 | 初稿存在文档快照方案 |
 | 2026-10-13 | 用户明确“文档快照被禁止” | 删除文档复制方案，改为 Command 保存属性变化、节点原位置及被摘出的原对象，通过局部逆操作撤销 |
 | 2026-10-13 | 用户要求初始化 Git 并创建含 UML 的 README | 建立 Git 仓库；编写包图、Command 类图、Composite 类图及依赖和变化点规则 |
+| 2026-10-13 | 用户要求在撤销时生成反向命令进入 redo，删除改为移动到不可访问的临时容器，并要求伪代码 | 两栈保存待执行命令，每次成功执行即时生成新的反向命令；补充隐藏对象的查询隔离、序列化隔离和回收规则；“不被 sl”暂按不被序列化解释 |
 
 后续实现发现的设计调整应追加记录，不能把计划直接改写成已经验证的结论。
 
@@ -328,4 +351,5 @@ end note
 - 用多步骤修改的中途失败场景验证 ChangeSet 回退，检查无节点丢失、无重复归属、索引一致。
 - 验证 undo 后的新编辑清空 redo，失败编辑保留 redo；验证成功 I/O 屏障、失败 I/O 和 canvas 查询的区别。
 - 验证 SVG 保存后读回的几何、样式、文本和顺序一致；覆盖 XML 转义、缺 id 自动命名及显式 id 冲突。
+- 验证 undo/redo 每次执行生成新的反向命令；隐藏对象不可查询且不被序列化；按两栈引用回收时保留仍需恢复的节点与父容器。
 - 实现完成后执行 TypeScript 检查、必要测试和依赖检查，把实际结果补入本文件。
