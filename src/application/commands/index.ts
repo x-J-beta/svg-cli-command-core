@@ -19,3 +19,5 @@ export { Circle } from "../../domain/Circle.js";
 export { Ellipse } from "../../domain/Ellipse.js";
 export { Line } from "../../domain/Line.js";
 export { Text } from "../../domain/Text.js";
+export { MoveCommand } from "./MoveCommand.js";
+export { ScaleCommand } from "./ScaleCommand.js";
