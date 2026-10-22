@@ -1,0 +1,25 @@
+{
+  "name": "svg-cli-command-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reversible SVG tree commands that generate their inverse on execution",
+  "exports": "./dist/application/commands/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "pretest": "npm run build",
+    "test": "node --test",
+    "precli": "npm run build",
+    "cli": "node dist/main.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "saxes": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43"
+  }
+}
