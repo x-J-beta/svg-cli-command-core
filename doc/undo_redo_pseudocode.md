@@ -1,6 +1,6 @@
 # 撤销、重做与隐藏临时容器伪代码
 
-这是设计伪代码，尚未实现为可运行 TypeScript。采用用户提出的即时生成命令方案，禁止文档快照。“不被 sl”暂解释为不参与序列化，同时不出现在 tree/show 中。
+本文描述当前[可运行命令模块](../src/application/commands/index.ts)的核心流程；2026-10-18 编译和 46 项测试通过。采用即时生成逆命令和统一 AddToCommand，禁止文档快照。CLI 与 SVG 读写已实现；隐藏对象不参与序列化，也不出现在 tree/show 中。
 
 两个栈保存待执行命令：
 
@@ -8,7 +8,7 @@
 - undo 执行时，立即生成能恢复撤销前状态的命令，压入 redo 栈。
 - redo 执行时，再次生成对应的撤销命令，压入 undo 栈。
 
-例如：删除 → 返回恢复命令；撤销执行恢复命令 → 返回删除命令；重做执行删除命令 → 再返回恢复命令。每次返回新命令对象。
+例如：删除执行 AddTo(node, 临时容器) → 返回 AddTo(node, 原父容器, 原位置)；撤销执行该命令 → 返回新的 AddTo(node, 临时容器, 临时位置)。每次返回新命令对象，不再设置专门的隐藏与恢复命令类。
 
 ## 1. 命令和两栈
 
@@ -24,6 +24,8 @@ interface ReversibleCommand:
 class EditResult:
     inverse: ReversibleCommand
     feedback: Text
+    rollback(context):
+        // 默认执行 inverse；CreateCommand 的未提交回退恢复未挂载状态。
 
 class CommandHistory:
     private undoStack = Stack<ReversibleCommand>()
@@ -81,8 +83,8 @@ undo/redo 内部直接执行命令，不能调用 `executeNew`，否则会错误
 
 ```text
 class TemporaryContainer:
-    private roots = IdentitySet<Shape>()
-        // 按对象身份存储，不按 SVG id 查找。
+    private roots = List<Shape>()
+        // 有序保存原对象引用，按对象身份定位，不按 SVG id 查找。
         // 没有用户 id，不挂在可见 SVG 根下面。
 
     // 以下能力只供领域内部的原子迁移操作使用。
@@ -93,38 +95,35 @@ class TemporaryContainer:
 
 class SvgDocument:
     private visibleRoot: ShapeContainer
-    private activeIdIndex: Map<string, Shape>
     private temporary: TemporaryContainer
 
     findActiveById(id):
-        require activeIdIndex.contains(id), "error: no such shape: " + id
-        return activeIdIndex[id]                // 不搜索 temporary
+        node = findInVisibleTree(id)            // 当前遍历可见树，不搜索 temporary
+        require node exists, "error: no such shape: " + id
+        return node
 
     visibleChildren():
         return visibleRoot.readonlyChildren()   // 不包含 temporary
 
-    visiblePlacementOf(node):
-        require isActive(node)
+    placementOf(node):
+        require node 属于当前可见文档或隐藏临时容器
         return Placement(node.parent, node.parent.indexOf(node))
 
-    moveToTemporaryAtomically(node):
-        validate node 属于当前可见文档且不是 SVG 根
-        // 同一次原子迁移中完成：
-        // 1. 从原父容器移除 node。
-        // 2. 将 node 作为原子树根挂入 temporary。
-        // 3. 从 activeIdIndex 移除 node 及所有子孙的 id。
-        // 任一步失败则按局部逆操作恢复；不复制文档。
-
-    restoreAtomically(node, placement):
-        validate temporary.containsRoot(node)
-        validate placement.parent 是当前可见根或可见容器
-        validate placement.index 是合法插入位置
-        validate node 子树全部 id 不与 activeIdIndex 冲突
-        // 同一次原子迁移中完成：
-        // 1. 从 temporary 摘出 node。
-        // 2. 按 placement 挂入原父容器。
-        // 3. 将 node 及全部子孙重新加入 activeIdIndex。
-        // 任一步失败则回到 temporary 并恢复索引。
+    relocate(node, target, optionalIndex):
+        old = placementOf(node)
+        available = target.size - (target == old.parent ? 1 : 0)
+        index = optionalIndex ?? available
+        validate target 属于当前文档
+        validate index 为整数且 0 <= index <= available
+        validate target 不是 node 自己或其子孙的容器
+        if target 位于可见树:
+            validate node 子树全部 id 唯一且不与其他可见对象冲突
+        old.parent.removeInternal(node)
+        try:
+            target.insertInternal(node, index)
+        catch failure:
+            old.parent.insertInternal(node, old.index)
+            throw failure
 
 class TreeCommand:
     execute(context):
@@ -140,11 +139,13 @@ class SvgWriter:
         // 绝不从 document 的全部字段或内部容器开始遍历。
 ```
 
-原子迁移具体应由封装的领域方法实现，不能让命令直接操作 roots、children 或 activeIdIndex。临时容器与被删对象都不能通过普通用户命令访问；恢复依靠历史命令保存的对象引用。
+原子迁移由封装的领域方法实现，命令不直接操作 roots 或 children。临时容器与被删对象不能通过公共 id 查询访问；内部迁移使用命令保存的对象引用和容器能力。公共 addto 仅允许解析可见容器 id。
+
+可选 index 从 0 开始，省略时追加；同父容器迁移按移除节点后的列表解释。节点迁移保留自身属性，不自动抵消父级变换或继承样式。
 
 隐藏对象不参与可见文档的 id 唯一性检查，因此删除后可以复用 id。临时容器可以同时持有多个 id 相同、对象身份不同的历史对象；恢复前必须检查冲突。按线性历史撤销时，新对象会先被撤销，再恢复同 id 的旧对象。
 
-## 3. 删除与恢复互相生成
+## 3. 统一迁移命令：删除与恢复只是不同目标
 
 ```text
 class DeleteCommand implements ReversibleCommand:
@@ -152,40 +153,30 @@ class DeleteCommand implements ReversibleCommand:
 
     execute(context):
         node = context.document.findActiveById(id)
-        return new MoveToTemporaryCommand(node).execute(context)
+        return new AddToCommand(node, context.document.temporaryForCommands()).execute(context)
 
     retainedNodes():
         return {}                              // 尚未执行的用户输入命令
 
-class MoveToTemporaryCommand implements ReversibleCommand:
+class AddToCommand implements ReversibleCommand:
     private node: ShapeReference
+    private target: ShapeContainerReference
+    private optionalIndex
 
     execute(context):
-        oldPlacement = context.document.visiblePlacementOf(node)
-        inverse = new RestoreCommand(node, oldPlacement)
-        context.document.moveToTemporaryAtomically(node)
-        return EditResult(inverse, node.id + " deleted")
+        old = context.document.placementOf(node)
+        inverse = new AddToCommand(node, old.parent, old.index)
+        context.document.relocate(node, target, optionalIndex)
+        return EditResult(inverse, node.id + " moved")
 
     retainedNodes():
-        return {node}
-
-class RestoreCommand implements ReversibleCommand:
-    private node: ShapeReference
-    private placement: Placement
-
-    execute(context):
-        inverse = new MoveToTemporaryCommand(node)
-        context.document.restoreAtomically(node, placement)
-        return EditResult(inverse, node.id + " restored")
-
-    retainedNodes():
-        return {node, placement.parent}
-        // 父容器日后也可能被删，仍须保留以供恢复。
+        return {node} + (target.owner exists ? {target.owner} : {})
+        // 目标父容器日后也可能被删，仍须保留以供恢复。
 ```
 
 逆命令在当前执行过程中构造，并在修改成功后返回入栈。隐藏容器、命令及可见树始终引用同一对象，删除一个 Group 保留其整棵子树及内部顺序。
 
-创建也遵循同一方案：CreateCommand 将新对象挂入可见树后，返回 MoveToTemporaryCommand；撤销创建将其移入临时容器，并生成 RestoreCommand 供 redo 使用。
+创建也遵循同一方案：CreateCommand 将新对象挂入可见树后，返回目标为临时容器的 AddToCommand；撤销创建将其隐藏，同时生成指向原位置的 AddToCommand 供 redo 使用。
 
 ## 4. 属性修改与多步骤命令
 
@@ -212,27 +203,29 @@ class CommandBatch implements ReversibleCommand:
     private commands: List<ReversibleCommand>
 
     execute(context):
-        inverses = List<ReversibleCommand>()
+        applied = List<EditResult>()
         try:
             for command in commands:
-                result = command.execute(context)
-                inverses.append(result.inverse)
+                applied.append(command.execute(context))
         catch failure:
-            for inverse in reverse(inverses):
-                inverse.execute(context)       // 回退已成功步骤，返回值丢弃
+            for result in reverse(applied):
+                result.rollback(context)       // 回退已成功但尚未提交的步骤
             throw failure
         return EditResult(
-            new CommandBatch(reverse(inverses)),
-            "batch completed"
+            new CommandBatch(reverse(applied).map(result -> result.inverse)),
+            "batch completed",
+            rollback = context -> reverse(applied).forEach(result -> result.rollback(context))
         )
 
     retainedNodes():
         return union(command.retainedNodes() for command in commands)
 ```
 
-`move/scale` 根据图形多态计算本次受影响属性的目标值，组成 SetPropertyCommand 批次。撤销写回原数值，执行撤销时捕获此刻数值并生成 redo，避免用加减或乘倒数恢复产生浮点误差。
+move/scale 已按图形多态计算受影响属性的目标值，组成 SetPropertyCommand 批次；撤销写回原数值，执行撤销时捕获此刻数值并生成 redo，避免用加减或乘倒数恢复产生浮点误差。
 
 `group/ungroup` 的节点迁移也包装为单个 CommandBatch。批次尽量预检查业务条件；所有子命令必须具备原子性，且逆命令能在当前串行上下文中可靠回退。批次内部不操作历史、不回收临时对象、不执行文件 I/O；只有完整成功后才由历史管理器更新两栈并回收。
+
+事务回退与用户撤销有一个区别：用户撤销成功创建时会隐藏对象，以便重做；失败批次中的新建对象必须恢复为原本未挂载状态。因此 CreateCommand 的 EditResult 提供专门的 rollback，批次回退时移除未提交的创建对象，不留下临时节点。嵌套批次也保留子步骤的 rollback；不会复制文档。
 
 ## 5. 临时对象回收
 
@@ -259,37 +252,39 @@ class SvgDocument:
 
 ## 6. 执行轨迹与 UML
 
-假设 r1 原本位于 g1 的第 2 个位置：
+假设 r1 原本位于 g1 的索引 2（从 0 开始）：
 
 | 操作 | 可见树 | 临时容器 | undo 栈顶 | redo 栈顶 |
 |---|---|---|---|---|
-| delete r1 | r1 被移出 | 同一个 r1 对象 | Restore(r1, g1, 2) | 空 |
-| undo | r1 回到 g1 原位置 | 空 | 空 | 新生成的 MoveToTemporary(r1) |
-| redo | r1 再次被移出 | 同一个 r1 对象 | 新生成的 Restore(r1, g1, 2) | 空 |
+| delete r1 | r1 被移出 | 同一个 r1 对象 | AddTo(r1, g1, 2) | 空 |
+| undo | r1 回到 g1 原位置 | 空 | 空 | 新生成的 AddTo(r1, temporary, 0) |
+| redo | r1 再次被移出 | 同一个 r1 对象 | 新生成的 AddTo(r1, g1, 2) | 空 |
 
 ```plantuml
 @startuml
 title 撤销恢复对象时即时产生 redo 命令
 actor User
 participant CommandHistory as History
-participant "RestoreCommand(r1, g1, 2)" as Restore
+participant "AddToCommand(r1, g1, 2)" as Restore
 participant SvgDocument as Document
 participant TemporaryContainer as Temporary
 
 User -> History : undo()
 History -> History : peek undoStack（不弹出）
 History -> Restore : execute(context)
-Restore -> Restore : new MoveToTemporaryCommand(r1)
-Restore -> Document : restoreAtomically(r1, g1, 2)
-Document -> Document : 检查原父容器、位置和 id 冲突
+Restore -> Document : placementOf(r1)
+Document --> Restore : (temporary, 原临时位置)
+Restore -> Restore : new AddToCommand(r1, temporary, 原临时位置)
+Restore -> Document : relocate(r1, g1, 2)
+Document -> Document : 检查目标父容器、位置和 id 冲突
 Document -> Temporary : 摘出原 r1 对象
-Document -> Document : 挂回原位置并恢复可见索引
+Document -> Document : 挂回原位置，进入可见树
 Document --> Restore : success
-Restore --> History : 新 MoveToTemporaryCommand + feedback
+Restore --> History : 新 AddToCommand + feedback
 History -> History : pop undoStack
 History -> History : push 新命令到 redoStack
 History --> User : r1 restored
 @enduml
 ```
 
-实现时需要验证：重复 undo/redo 保持对象身份；删除容器时全部子孙不可查询；同 id 新旧对象按历史顺序正确恢复；失败命令保留两栈；新编辑只回收废弃历史需要的隐藏对象；保存不包含临时容器及其对象。这些是待执行的验证，不代表伪代码已通过运行测试。
+上述逆命令、对象身份、可见查询隔离、id 复用、插入顺序、失败回退、历史保留和回收场景均包含在当前 46 项测试中。SVG 集成测试已验证保存不包含临时容器及其对象。

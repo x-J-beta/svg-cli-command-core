@@ -1,6 +1,6 @@
 # SVG 编辑器（CLI）设计文档
 
-依据：[phase_cli_1.md](../phase_cli_1.md)。本文件是实施前的设计方案，类名和目录均为计划，尚未落实为代码。
+依据：[phase_cli_1.md](../phase_cli_1.md)。基础编辑器已实现：CLI、六种图形、SVG 读写、全部基础编辑命令和撤销重做；box 与插件加载留到后续阶段。开发环境、协作约定及运行方式见[根 README](../README.md)。
 
 约束：TypeScript、面向对象、字段封装、一类一文件且文件名与类名一致；使用 Command 和 Composite；禁止文档快照；按名字分派仅允许出现在命令分发和图形工厂两处。
 
@@ -10,10 +10,11 @@
 
 | 模块（目录） | 职责 | 主要对象 |
 |---|---|---|
-| `src/domain/` | 图形几何和属性规则、唯一 id、文档树、父子关系及顺序；原子地迁移节点及修改属性；保管已删除对象 | `SvgDocument`、`Shape`、`Group`、六种内置图形、`ShapeFactory`、`ChangeSet`、`TemporaryContainer` |
-| `src/application/` | 命令对象、命令分发、编辑会话、执行流程、撤销重做；定义 SVG 存储接口 | `CommandDispatcher`、`CommandRunner`、`CommandHistory`、`EditorSession`、`SvgRepository` |
-| `src/application/commands/` | 每条命令的参数检查、用例协调和结果生成；属于 application 模块 | `CreateCommand`、`MoveCommand`、`GroupCommand`、`ReadCommand` 等 |
-| `src/infrastructure/svg/` | 文件与 XML 读写；保留子节点顺序，导入时补缺失 id，生成警告 | `FileSvgRepository`、`SvgReader`、`SvgWriter` |
+| `src/domain/` | 图形几何和属性规则、唯一 id、文档树、父子关系及顺序；原子迁移节点；保管已删除对象 | `SvgDocument`、`Shape`、`GeometricShape`、`Rect/Circle/Ellipse/Line/Text/Group`、`ShapeFactory`、`ShapeContainer`、`TemporaryContainer` |
+| `src/application/` | 编辑会话、命令分发、上下文、撤销重做、显示内容；声明存储接口 | `EditorSession`、`CommandDispatcher`、`CommandContext`、`EditResult`、`CommandHistory`、`DocumentPresenter`、`SvgRepository` |
+| `src/application/commands/` | 可逆编辑命令与批次；属于 application 模块 | `ReversibleCommand`、`AddToCommand`、`CreateCommand`、`DeleteCommand`、`SetPropertyCommand`、`MoveCommand`、`ScaleCommand`、`GroupCommand`、`UngroupCommand`、`CommandBatch` |
+| `src/application/cliCommands/` | 命令语法、参数检查及用例适配；属于 application 模块 | `CliCommand`、`CommandArguments`、各 `*CliCommand`；命令名只在分发器中映射 |
+| `src/infrastructure/svg/` | 文件与 XML 读写；保留子节点顺序，导入时补缺失 id，生成警告 | `FileSvgRepository`、`SvgReader`、`SvgWriter`、`SvgElement` |
 | `src/cli/` | REPL、`svg>` 提示符、逐行输入、引号切分、整行注释识别及反馈输出 | `CliRepl`、`Tokenizer`、`ConsolePresenter` |
 | `src/main.ts` | 创建具体对象、注入依赖并启动程序 | 组装入口 |
 
@@ -36,19 +37,23 @@ package "src/cli" as CLI {
 }
 package "src/application" as APP {
   [CommandDispatcher]
-  [CommandRunner]
-  [CommandHistory]
   [EditorSession]
+  [CommandHistory]
+  [CommandContext]
+  [DocumentPresenter]
   interface SvgRepository
   package "commands" {
     [Command objects]
+  }
+  package "cliCommands" {
+    [CLI command adapters]
   }
 }
 package "src/domain" as DOMAIN {
   [SvgDocument]
   [Shape hierarchy]
   [ShapeFactory]
-  [ChangeSet]
+  [ShapeContainer]
   [TemporaryContainer]
 }
 package "src/infrastructure/svg" as INFRA {
@@ -77,92 +82,72 @@ end note
 
 #### Command：命令对象与撤销重做
 
-`Command` 声明 `execute(session)` 和历史策略。`ReversibleCommand` 的执行结果额外包含本次执行即时生成的反向命令。编辑、撤销和重做都通过命令的 `execute` 完成，不要求每条编辑命令分别提供 `undo/redo` 方法。
+`ReversibleCommand` 声明 `execute(context)` 和 `retainedNodes()`；执行结果 `EditResult` 包含本次即时生成的反向命令。编辑、撤销和重做都通过命令的 execute 完成。CLI 适配层实现 `CliCommand`，负责检查参数并调用会话用例，避免把输入文本传进图形模型。
 
-`EditCommand` 是可逆编辑命令的抽象基类，封装准备修改、原子执行和返回反向命令的共同流程。`CommandHistory` 的两个栈均保存“下一次需要执行的命令”：新编辑成功后将其反向命令压入 undo；undo 执行栈顶命令，将当场生成的反向命令压入 redo；redo 对称处理。每次生成一个新命令对象，不把刚执行的旧对象直接搬到另一栈。
+各具体命令直接实现该接口，尚不引入没有实际用途的编辑基类。`CommandHistory` 的两个栈均保存“下一次需要执行的命令”：新编辑成功后将其反向命令压入 undo；undo 执行栈顶命令，将当场生成的反向命令压入 redo；redo 对称处理。每次生成一个新命令对象，不把刚执行的旧对象直接搬到另一栈。
 
-例如 delete 执行后 undo 栈保存 RestoreCommand；撤销时执行 RestoreCommand，并立即生成 MoveToTemporaryCommand 放入 redo 栈。redo 的效果是恢复撤销前的状态。[完整伪代码](undo_redo_pseudocode.md)描述栈操作、隐藏容器和对象回收。
+例如 delete 将对象移入临时容器，undo 栈保存指向原父容器和原位置的 AddToCommand；撤销时执行该迁移，并即时生成指向临时容器的新 AddToCommand 放入 redo 栈。不再设置独立的 MoveToTemporaryCommand、RestoreCommand。[完整伪代码](undo_redo_pseudocode.md)描述统一迁移、栈操作和回收。
 
-| 命令类别 | 计划类 | 历史策略 |
+| 命令类别 | 实现 | 历史策略 |
 |---|---|---|
-| 图形编辑 | `CreateCommand`、`DeleteCommand`、`MoveCommand`、`ScaleCommand`、`SetCommand`、`GroupCommand`、`UngroupCommand`、`AddToCommand`、`FrontCommand`、`BackCommand` | 成功后生成反向命令，作为一个撤销单元入 undo 栈，同时清空 redo 栈 |
-| 文档操作 | `InitCommand`、`ReadCommand`、`SaveCommand`、带尺寸的 `CanvasCommand` | 成功后建立历史屏障 |
-| 查询 | `TreeCommand`、`ShowCommand`、`HelpCommand`、无尺寸的 `CanvasCommand` | 不入栈，不改变已有历史 |
-| 历史控制 | `UndoCommand`、`RedoCommand` | 调用 `CommandHistory`，自身不入栈 |
+| 当前编辑核心 | `CreateCommand`、`DeleteCommand`、`SetPropertyCommand`、`AddToCommand`、`CommandBatch` | 成功后生成反向命令，作为一个撤销单元入 undo 栈，同时清空 redo 栈 |
+| 分组、排列、几何 | `GroupCommand/UngroupCommand` 使用批次；`front/back` 直接适配 AddTo；`MoveCommand/ScaleCommand` 使用属性命令批次 | 每条用户命令一个撤销单元 |
+| 文档操作 | `InitCliCommand`、`ReadCliCommand`、`SaveCliCommand`、带尺寸的 `CanvasCliCommand` | 对应会话方法成功后建立历史屏障 |
+| 查询 | `TreeCliCommand`、`ShowCliCommand`、`HelpCliCommand`、无尺寸的 `CanvasCliCommand` | 不入栈，不改变已有历史 |
+| 历史控制 | `HistoryCliCommand` | 调用 CommandHistory，自身不入栈 |
 
-历史策略由命令报告，执行器按策略处理，不能再次按命令名字分派。`CanvasCommand` 根据参数是否包含尺寸选择查询或屏障策略。
+原方案的独立 CommandRunner 没有创建：EditorSession 负责会话和用例，CommandHistory 负责可逆命令调用，职责已经覆盖。历史策略由具体会话方法落实，不再引入报告策略的枚举；分发器仅查表调用，不按命令名重复分支。
 
 #### PlantUML 命令类图
 
 ```plantuml
 @startuml
-title Command 与局部可逆修改
+title 已实现的逆命令核心
 skinparam classAttributeIconSize 0
 
-interface Command {
-  +execute(session: EditorSession): CommandResult
-  +historyPolicy(): HistoryPolicy
-}
 interface ReversibleCommand {
-  +execute(session: EditorSession): EditResult
+  +execute(context: CommandContext): EditResult
   +retainedNodes(): ReadonlySet<Shape>
 }
-Command <|-- ReversibleCommand
-abstract class EditCommand {
-  #prepare(session: EditorSession): ChangeSet
-  +execute(session: EditorSession): EditResult
-}
-ReversibleCommand <|.. EditCommand
-EditCommand <|-- MoveCommand
-EditCommand <|-- DeleteCommand
-EditCommand <|-- GroupCommand
-EditCommand <|-- RestoreCommand
-EditCommand <|-- MoveToTemporaryCommand
-Command <|.. ReadCommand
+ReversibleCommand <|.. AddToCommand
+ReversibleCommand <|.. CreateCommand
+ReversibleCommand <|.. DeleteCommand
+ReversibleCommand <|.. SetPropertyCommand
+ReversibleCommand <|.. CommandBatch
+ReversibleCommand <|.. MoveCommand
+ReversibleCommand <|.. ScaleCommand
+ReversibleCommand <|.. GroupCommand
+ReversibleCommand <|.. UngroupCommand
 class EditResult {
   +inverse: ReversibleCommand
-}
-class CommandResult {
   +feedback: string
+  +rollback(context): void
 }
-CommandResult <|-- EditResult
-
-class CommandDispatcher
-class CommandRunner
-class EditorSession
+class CommandContext {
+  +document: SvgDocument
+}
 class CommandHistory {
   -undoStack: ReversibleCommand[]
   -redoStack: ReversibleCommand[]
   -blockedByIo: boolean
+  +executeNew(command, context): EditResult
+  +undo(context): EditResult
+  +redo(context): EditResult
 }
-class ChangeSet {
-  -changes: Change[]
-  +apply(): void
-  +inverse(): ChangeSet
-}
-interface Change {
-  +apply(): void
-  +revert(): void
-}
-class AttributeChange
-class PlacementChange
-
-Change <|.. AttributeChange
-Change <|.. PlacementChange
-ChangeSet *-- "0..*" Change
-EditCommand ..> ChangeSet : 准备局部修改
 EditResult --> ReversibleCommand : 当次生成的反向命令
 ReversibleCommand ..> EditResult : execute 返回
-CommandDispatcher ..> Command : 创建
-CommandRunner --> Command : execute
-CommandRunner --> CommandHistory
-CommandRunner --> EditorSession
 CommandHistory o-- "0..*" ReversibleCommand : 待执行命令
-EditorSession --> SvgDocument
+CommandHistory --> CommandContext
+CommandContext --> SvgDocument
 SvgDocument *-- TemporaryContainer : 私有隐藏容器
-MoveToTemporaryCommand ..> TemporaryContainer
-RestoreCommand ..> TemporaryContainer
-ReadCommand ..> SvgRepository
+DeleteCommand ..> AddToCommand : 目标为隐藏容器
+CreateCommand ..> AddToCommand : 生成撤销命令
+AddToCommand ..> AddToCommand : 原位置的新命令
+CommandBatch o-- "0..*" ReversibleCommand : 有序子命令
+MoveCommand ..> CommandBatch : 属性变更
+ScaleCommand ..> CommandBatch : 属性变更
+GroupCommand ..> CommandBatch : 节点迁移
+UngroupCommand ..> CommandBatch : 节点迁移
 @enduml
 ```
 
@@ -172,8 +157,8 @@ ReadCommand ..> SvgRepository
 
 | 编辑命令 | 需要保留的记录 | 撤销与重做 |
 |---|---|---|
-| `create` | 创建出的原图形对象、父容器、插入位置 | 返回移入临时容器的命令；该命令执行后返回恢复命令 |
-| `delete` | 移入临时容器的原子树对象、原父容器和位置 | 返回恢复命令；恢复时返回新的移入临时容器命令 |
+| `create` | 创建出的原图形对象、父容器、插入位置 | 返回目标为临时容器的 AddToCommand；执行后再生成回原位置的 AddToCommand |
+| `delete` | 移入临时容器的原子树对象、原父容器和位置 | 返回指向原位置的 AddToCommand；恢复时返回指向临时容器的新 AddToCommand |
 | `move` | 增量参数及本次改变的坐标属性旧值、新值 | 写回旧值或新值 |
 | `scale` | 缩放参数及本次改变的几何属性旧值、新值 | 写回旧值或新值，避免乘倒数带来的浮点误差 |
 | `set` | 属性名、原来是否存在、旧值、新值 | 恢复原值或原本的缺省状态；重做设置新值 |
@@ -182,15 +167,17 @@ ReadCommand ..> SvgRepository
 | `addto` | 节点的原父容器和位置、目标容器和目标位置 | 撤销迁回；重做迁入 |
 | `front/back` | 节点及原位置、目标位置 | 在同一父容器内恢复或调整位置 |
 
-`AttributeChange` 记录一个属性的变化，包含“属性不存在”的状态。`PlacementChange` 记录一个节点从一个父容器及位置迁到另一个位置，位置也可以属于隐藏临时容器。这些记录仅由领域操作创建，命令不能直接修改节点的内部数组或字段。
+`SetPropertyCommand` 记录目标属性值，包含“属性不存在”的状态；执行时捕获原值生成逆命令。`AddToCommand` 记录节点、目标父容器及可选位置，执行时捕获原父容器与位置生成逆命令。这些命令通过领域方法修改对象，不能直接修改内部数组或字段。
 
-`ChangeSet` 用于一次执行内部的原子修改和失败回退。历史层使用当次生成的反向命令；反向命令再次执行时，按此刻被修改的值及位置生成新的反向命令。一个 `group` 即使包含多次节点迁移，其逆操作也包装为一个命令，仅占一个历史单元。
+`CommandBatch` 顺序执行子命令，逆命令按相反顺序组成新批次。group 即使包含多次节点迁移，仍只占一个历史单元。move/scale 由图形多态计算几何目标值，组合为属性修改批次；撤销写回原数值，避免通过乘倒数恢复浮点数。
+
+addto 的可选 index 从 0 开始，省略时追加；同父容器迁移按移除节点后的列表解释。内部传递容器引用，CLI 只允许解析可见 g 的 id。根和隐藏临时容器不是用户可寻址的 g。
 
 #### 隐藏临时容器
 
 `TemporaryContainer` 由当前文档私有持有，独立于可见 SVG 根；不是普通 `g`，没有可供用户寻址的 id。删除容器时把整棵原子树移入临时容器，保留内部父子关系及对象身份，不逐个复制其子节点。
 
-公共 id 查找仅使用可见树索引；`tree/show/save` 仅遍历可见根。隐藏对象及其子孙不会出现在公开查询和序列化结果中。内部恢复命令持有对象引用和原位置，不能通过普通用户命令访问临时容器。
+公共 id 查找仅遍历可见树；tree/show/save 仅遍历可见根。隐藏对象及其子孙不会出现在公开查询和序列化结果中。内部逆命令持有对象引用和原位置，不能通过普通用户命令访问临时容器。
 
 临时容器按对象身份管理，允许保管不同历史中具有相同 SVG id 的对象；可见树仍要求 id 唯一。恢复前检查整个子树的 id 冲突。新编辑清空 redo 或 I/O 屏障清空历史后，仅释放两栈不再引用的隐藏子树；仍可能恢复的隐藏父容器也必须保留。
 
@@ -198,7 +185,7 @@ ReadCommand ..> SvgRepository
 
 执行前的准备阶段校验所有参数、目标存在性、id 冲突、属性白名单、数值范围、树循环和祖先子孙冲突，并构造局部修改记录。该阶段不改变文档。
 
-应用修改时，如果中途出现异常，`ChangeSet` 回退已经执行的步骤。单个修改必须保证自身失败时不留下部分修改。父指针、子节点顺序和 id 索引由领域对象统一维护；撤销、重做也遵守相同约束。
+应用修改时，如果中途出现异常，`CommandBatch` 倒序调用成功子步骤的 `EditResult.rollback`。默认回退执行逆命令；尚未提交的 CreateCommand 则恢复为原本未挂载的状态，避免把失败创建残留在临时容器中。嵌套批次保留这项回退语义。父指针和子节点顺序由领域对象统一维护。
 
 失败的执行、撤销或重做不改变历史栈。历史管理器先查看栈顶命令并执行，成功后才弹出原命令、将新生成的反向命令压入另一栈；准备失败的编辑命令不清空 redo 栈。
 
@@ -212,7 +199,7 @@ ReadCommand ..> SvgRepository
 
 #### Composite：容器与叶子的统一操作
 
-`Shape` 封装 id、样式与图形操作；叶子类实现自己的几何属性，`Group` 持有有序子节点并递归处理移动和缩放。文档根实现 `ShapeContainer`，但不是可由 id 编辑的普通图形。
+`Shape` 封装 id、样式和父容器，GeometricShape 复用几何属性规则；各具体叶子声明自己的几何参数、移动轴和创建参数。Group 组合 ShapeContainer，递归汇总子节点的 move/scale 目标。文档根和隐藏临时容器提供有序子节点能力，但不是可由 id 编辑的普通图形。
 
 容器通过 `asContainer()` 暴露容器能力，叶子返回空；命令用统一接口处理对象，不按 `tag` 判断具体类。`set g fill/stroke/stroke-width` 修改组自身的 SVG 样式属性，由 SVG 继承规则决定后代外观；不会强制覆盖子图形已有的属性。
 
@@ -224,24 +211,26 @@ skinparam classAttributeIconSize 0
 abstract class Shape {
   -id: string
   +asContainer(): ShapeContainer
-  +prepareMove(dx, dy): ChangeSet
-  +prepareScale(factor): ChangeSet
-  +prepareSet(name, value): ChangeSet
-  +describe(): ShapeDescription
-  +svgProperties(): SvgProperties
+  +readProperty(name): PropertyValue
+  +writeProperty(name, value): void
+  +moveTargets(dx, dy): GeometryTarget[]
+  +scaleTargets(factor): GeometryTarget[]
+  +svgAttributes(): ReadonlyMap
 }
-interface ShapeContainer {
-  +children(): ReadonlyArray<Shape>
-  +insertAt(shape, index): void
-  +remove(shape): void
+class ShapeContainer {
+  +children: ReadonlyArray<Shape>
+  +insertInternal(shape, index): void
+  +removeInternal(shape): void
 }
 class SvgDocument {
-  -width: number
-  -height: number
-  -idIndex: Map<string, Shape>
-  +findById(id): Shape
+  -root: ShapeContainer
+  -temporary: TemporaryContainer
+  +findActiveById(id): Shape
+  +relocate(shape, target, index): void
 }
 class Group
+class TemporaryContainer
+abstract class GeometricShape
 class Rect
 class Circle
 class Ellipse
@@ -249,29 +238,31 @@ class Line
 class Text
 
 Shape <|-- Group
-Shape <|-- Rect
-Shape <|-- Circle
-Shape <|-- Ellipse
-Shape <|-- Line
-Shape <|-- Text
-ShapeContainer <|.. Group
-ShapeContainer <|.. SvgDocument
-Group *-- "0..*" Shape : 有序子节点
-SvgDocument *-- "0..*" Shape : 根级节点
+Shape <|-- GeometricShape
+GeometricShape <|-- Rect
+GeometricShape <|-- Circle
+GeometricShape <|-- Ellipse
+GeometricShape <|-- Line
+GeometricShape <|-- Text
+Group *-- ShapeContainer
+ShapeContainer <|-- TemporaryContainer
+ShapeContainer *-- "0..*" Shape : 有序子节点
+SvgDocument *-- ShapeContainer : 可见根
+SvgDocument *-- TemporaryContainer : 隐藏根
 Shape --> "0..1" ShapeContainer : parent
 
 note right of Group
-move/scale 委托给子节点，形成一个 ChangeSet
+move/scale 委托给子节点，形成命令批次
 set 修改组自身样式
 end note
 @enduml
 ```
 
-`describe()` 提供类型、关键属性和文本等只读描述，`ConsolePresenter` 负责展示布局。`svgProperties()` 提供标签、属性和文本，`SvgWriter` 负责 XML 转义与生成；领域层不引用 XML 库。
+领域对象的 summary 和 svgAttributes 提供只读描述，DocumentPresenter 负责 tree/show 布局，SvgWriter 负责 XML 转义与生成；领域层不引用 XML 库。节点迁移保留自身属性，不保证父级变换或样式继承下的视觉效果不变。
 
 #### 工厂：集中图形类型分派
 
-`ShapeFactory` 是唯一的“类型名 → 图形类”解析位置，供 `create` 和 `SvgReader` 共同使用。内置六种类型的参数定义及构造方式绑定在同一映射项中；应用层按定义归一化位置参数，导入层按定义转换 XML 属性，不再各写一套 `switch(tag)`。
+`ShapeFactory` 是唯一的“类型名 → 图形类”解析位置，供 create 和 SvgReader 共同使用。六种类型各自提供创建参数和属性定义，工厂统一转换位置参数及 XML 属性；读写和显示均不另写 switch(tag)。
 
 本阶段明确标为待重构的两处：
 
@@ -296,7 +287,9 @@ end note
 
 违规示例：domain 引用 CLI 输出、application 引用具体存储类、CLI 直接操作 `Shape`、SVG 读取器修改撤销栈。发现违规时必须记为待处理项，修正依赖或如实修订方案；不能仅通过换目录名隐藏依赖。
 
-当前尚无源码，因此依赖一致性状态为“待实现后检查”。
+当前全部模块按上述方向实现。DocumentPresenter 放在 application，使 CLI 不直接依赖 domain；FileSvgRepository 只引用应用层的存储接口和读入结果类型。查找通过可见树遍历完成，尚未维护 id 索引；只有性能需要时再增加索引。
+
+本轮实际扫描了 63 个 TypeScript 文件及 249 处导入/重导出，未发现层级违规或类名与文件名不一致；每个类独立成文件。
 
 ### 1.4 变化点假设
 
@@ -305,8 +298,8 @@ end note
 | 增加图形类型及复合图形 `box` | `Shape` 多态、容器能力、单一工厂入口；创建和读取共享类型定义 | 先实现六种内置类型，工厂映射列为待重构；不实现插件发现、加载和 box，以符合阶段边界 |
 | 增加 agent 或鼠标输入渠道 | 命令对象与执行器独立于 REPL；命令接收已解析参数 | 新入口可以直接构造命令；CLI 语法不进入图形模型 |
 | 命令参数和反馈格式变化 | 每条命令独立检查参数；Tokenizer 只处理词法；Presenter 负责排版 | 不引入通用语法引擎，当前命令规模可以由各命令类处理 |
-| SVG 导入导出规则变化 | 存储接口、独立 Reader/Writer、共享图形工厂 | 先支持需求内的 SVG 子集；外部 transform 的支持范围须在实现导入时明确并记录，不能静默丢失图形位置 |
-| 撤销记录的内存或性能需求变化 | 即时生成反向命令、集中历史管理器、隐藏临时容器及按历史引用回收 | 禁止文档快照；暂不实现持久化历史、无限历史和历史分支，后续可增加条数上限 |
+| SVG 导入导出规则变化 | 存储接口、独立 Reader/Writer、共享图形工厂 | 支持六种类型；保留额外属性和 transform；几何命令修改局部属性，不对导入变换做屏幕坐标换算 |
+| 撤销记录的内存或性能需求变化 | 即时生成逆命令、集中历史管理器、隐藏临时容器及按历史引用回收 | 禁止文档快照；暂不实现持久化历史和历史分支，后续可增加条数上限 |
 | 层级与排列操作增多 | 统一父容器接口和节点位置修改；树不变量集中维护 | 新操作复用节点迁移，不允许直接写 children 数组 |
 | 新存储目标或测试替身 | `SvgRepository` 接口 | 仅实现本地文件；暂不引入数据库、远程服务等额外设施 |
 
@@ -317,6 +310,9 @@ end note
 - 仅整行去除前导空白后以 `#` 开始时视为注释；参数中的 `#4a90d9` 是颜色值，不能截断。
 - 缺 id 的导入分两步：先收集全部显式 id 并检查重复，再分配不冲突的 `标签名+序号`，防止自动生成的 id 抢占后面的显式 id。
 - 按需求禁止解散 SVG 直接子节点上的根级 `g`；该限制由 `UngroupCommand` 的准备阶段检查。
+- 无参数 save 使用最近成功 read/save 的路径；失败读写不改变路径或历史。help/exit 在未初始化时可使用。
+- SVG 尺寸支持单位为 px 的画布，几何属性采用有限浮点数；百分比尺寸、CSS 布局、DTD 及未知图形类型报错或不作布局计算。额外属性原样保留。
+- XML 使用 saxes 解析，读入先完成全部校验后才替换当前文档。TypeScript 源码严格检查；skipLibCheck 只跳过依赖声明自身兼容性错误。
 
 ## 2. 过程记录
 
@@ -326,30 +322,42 @@ end note
 | 2026-10-13 | 用户明确“文档快照被禁止” | 删除文档复制方案，改为 Command 保存属性变化、节点原位置及被摘出的原对象，通过局部逆操作撤销 |
 | 2026-10-13 | 用户要求初始化 Git 并创建含 UML 的 README | 建立 Git 仓库；编写包图、Command 类图、Composite 类图及依赖和变化点规则 |
 | 2026-10-13 | 用户要求在撤销时生成反向命令进入 redo，删除改为移动到不可访问的临时容器，并要求伪代码 | 两栈保存待执行命令，每次成功执行即时生成新的反向命令；补充隐藏对象的查询隔离、序列化隔离和回收规则；“不被 sl”暂按不被序列化解释 |
+| 2026-10-13 | 用户提出统一图形和容器抽象、addto 增加 index、去掉专门的隐藏和恢复命令、暂缓 move/scale | 当前采用 AddToCommand 统一迁移及逆命令，保留容器能力边界；move/scale 后续用批次实现 |
+| 2026-10-13 | 用户要求设计重点持续写入 README，Git 仅在其明确要求时操作，并要求可测试模块 | 记录协作约定，建立 TypeScript 逆命令模块；遵守 Git 操作限制 |
+| 2026-10-18 | 用户要求 TypeScript 安装到 D 盘、Node.js 加入 PATH，并在具体路径说明后明确批准 | TypeScript 7.0.2 安装到 D:\dev-tools\typescript 并加入用户 PATH；既有 Node.js 已在系统 PATH；未安装项目依赖 |
+| 2026-10-18 | 使用已安装编译器验证逆命令模块，发现批次中的失败创建不能仅作为用户撤销处理 | EditResult 增加事务回退操作；失败创建恢复未挂载状态；编译和 23 项测试通过 |
+| 2026-10-18 | 用户要求完成基础功能，分别批准 saxes 和 @types/node@20 的工作区安装 | 完成六种图形、共享工厂、CLI、SVG 读写及全部基础命令；move/scale 按既定批次方案补齐 |
+| 2026-10-18 | 独立执行器和策略枚举在实现中无额外职责 | 使用 EditorSession 协调用例，CommandHistory 执行编辑；新增 cliCommands 适配目录，保持依赖方向 |
+| 2026-10-18 | 测试发现旧版 Node 在 Windows 不展开命令行通配符，沙箱临时目录限制文件替换 | 测试使用 node --test 自动发现；文件测试在已校验的工作区临时目录运行并清理；46 项测试通过 |
+| 2026-10-18 | 用户替换安装规则 | 全部内容位于工作区且预计总安装大小小于 100 MB 时可直接安装；其他或不确定情况先逐项批准。Git 操作限制继续保留 |
+| 2026-10-22 | 用户要求按已实现的功能分别提交 | 按构建配置、图形模型、逆命令与历史、移动缩放、分组解组、SVG 读写、CLI、文档示例组织八笔提交；不改变已有提交历史 |
 
 后续实现发现的设计调整应追加记录，不能把计划直接改写成已经验证的结论。
 
 ## 3. 一致性自查
 
-当前只有需求与设计文档，没有 TypeScript 实现。
+当前已实现 Phase 1 基础功能；插件化 box 属于后续阶段。
 
 | 检查项 | 当前状态 | 实现后检查方式 |
 |---|---|---|
-| 实际目录与模块方案一致 | 待检查 | 对照 src 目录；偏离之处记入过程记录 |
-| 实际依赖遵守规则 | 待检查 | 检查 import，重点抽查 application、domain 和 infrastructure |
-| 一类一文件、字段封装及多态 | 待检查 | 检查类文件和可写公开字段；抽查图形操作是否依赖类型判断 |
-| 仅两处名字分派 | 待检查 | 检查命令名字和图形 tag 的分派位置；XML 读写及 tree/show 不重复分派 |
-| 撤销不使用文档快照 | 待检查 | 检查命令持有的记录以及 undo/redo 路径，排除文档复制和序列化恢复 |
+| 实际目录与模块方案一致 | domain/application/infrastructure/cli/main 均已实现；新增 cliCommands 子目录，未创建 CommandRunner | 差异已写入过程记录 |
+| 实际依赖遵守规则 | 按层检查源码导入；存储依赖倒置通过 SvgRepository 实现 | 后续新增代码沿用检查 |
+| 一类一文件、字段封装及多态 | 当前类独立成文件，业务状态使用私有字段 | 继续检查后续图形和工厂实现 |
+| 仅两处名字分派 | CommandDispatcher 与 ShapeFactory；XML 读写和显示使用图形多态 | 两处都已标记为后续注册机制的重构点 |
+| 撤销不使用文档快照 | 当前使用原对象引用、属性值、父容器和位置；无文档复制恢复 | 后续命令沿用该约束 |
 
 ## 4. 质量保证手段
 
-以下是计划执行的验证，当前尚未执行功能测试。
+2026-10-18：TypeScript 7.0.2 编译通过，npm test 的 **46 项测试全部通过**：23 项逆命令核心测试、13 项编辑器集成测试、8 项 SVG 测试、2 项词法及真实 CLI 测试。流程图脚本已通过真实 CLI 回放，产物为 examples/flowchart.svg。
 
-- 用需求的典型会话及两节点流程图回放，检查输出、嵌套操作、保存结果和浏览器预览。
-- 对每种编辑命令验证 execute → undo → redo：核对属性存在性、数值、节点父级、同级顺序和 id 索引；覆盖容器删除、跨父级 group 和 ungroup。
+已执行的验证：
+
+- 回放两节点流程图，检查输出、嵌套操作和保存结果；真实 CLI 的失败命令逐行输出且后续命令继续执行。
+- 验证编辑命令 execute → undo → redo，核对属性存在性、数值、父级及同级顺序；覆盖容器删除、跨父级 group、嵌套 ungroup、排序及 index。
 - 针对错误命令验证文档及两栈不变，包括重复 id、无目标、非法属性、非正 scale、循环迁移和祖先子孙分组冲突。
-- 用多步骤修改的中途失败场景验证 ChangeSet 回退，检查无节点丢失、无重复归属、索引一致。
+- 用多步骤修改的中途失败场景验证批次回退，检查无节点丢失、无重复归属；将来若引入索引，同时检查索引一致。
 - 验证 undo 后的新编辑清空 redo，失败编辑保留 redo；验证成功 I/O 屏障、失败 I/O 和 canvas 查询的区别。
 - 验证 SVG 保存后读回的几何、样式、文本和顺序一致；覆盖 XML 转义、缺 id 自动命名及显式 id 冲突。
 - 验证 undo/redo 每次执行生成新的反向命令；隐藏对象不可查询且不被序列化；按两栈引用回收时保留仍需恢复的节点与父容器。
-- 实现完成后执行 TypeScript 检查、必要测试和依赖检查，把实际结果补入本文件。
+- SVG 保存后读回验证几何、样式、Unicode 文本、XML 实体、CDATA、额外属性、transform、缺 id、命名冲突及隐藏节点隔离。
+- 尚未进行浏览器截图比对；可手动在浏览器打开示例 SVG。当前验证不涵盖插件、CSS 计算或全 SVG 标准。
