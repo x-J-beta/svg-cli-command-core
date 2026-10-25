@@ -2,8 +2,7 @@ import type { Shape } from "../../domain/Shape.js";
 import type { CommandContext } from "../CommandContext.js";
 import type { EditResult } from "../EditResult.js";
 import type { ReversibleCommand } from "./ReversibleCommand.js";
-import { CommandBatch } from "./CommandBatch.js";
-import { SetPropertyCommand } from "./SetPropertyCommand.js";
+import { GeometryCommandBatch } from "./GeometryCommandBatch.js";
 
 export class ScaleCommand implements ReversibleCommand {
   readonly #node: Shape;
@@ -13,8 +12,8 @@ export class ScaleCommand implements ReversibleCommand {
   execute(context: CommandContext): EditResult {
     context.document.requireActive(this.#node);
     if (!Number.isFinite(this.#factor) || this.#factor <= 0) throw new Error("scale factor must be positive");
-    return new CommandBatch(
-      this.#node.scaleTargets(this.#factor).map(({ shape, name, value }) => new SetPropertyCommand(shape, name, value)),
+    return new GeometryCommandBatch(
+      this.#node.scaleTargets(this.#factor),
       `${this.#node.label} scaled by ${this.#factor}`, `${this.#node.label} scale undone`,
     ).execute(context);
   }

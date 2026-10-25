@@ -64,6 +64,15 @@ Get-Content -Encoding utf8 examples/flowchart.commands.txt | node dist/main.js
 - move/scale 已在本轮通过属性修改的 CommandBatch 实现；容器递归生成子孙的属性修改，一次撤销完整恢复。
 - 迁移保留节点自身属性；不承诺父容器变换和继承样式下的视觉效果不变。
 
+### move/scale 的确定方案
+
+- move 给位置属性加 dx/dy；scale 以坐标原点为基准，将位置与尺寸同乘有限正数。
+- 各叶子通过多态提供几何目标值，g 递归汇总子节点目标；GeometryCommandBatch 在首次写入前检查全部计算结果均为有限数。
+- 属性修改组成一个 CommandBatch；每个 SetPropertyCommand 即时生成恢复原值的逆命令，撤销时再生成新的 redo 命令。
+- 撤销直接写回原属性值，避免用负位移或倍率倒数恢复造成精度损失；没有文档快照。
+- text 只改变 x/y；文本、字号、描边宽度和导入的 transform 保持不变。修改的是局部几何，不换算屏幕坐标。
+- 空容器、零位移、倍率 1 是合法编辑，仍占一个撤销单元；非法参数或数值溢出不改变文档及历史。
+
 ## 开发环境与测试
 
 2026-10-18 经用户逐项批准后，安装并验证了以下环境：
