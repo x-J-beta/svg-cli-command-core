@@ -89,7 +89,17 @@ Get-Content -Encoding utf8 examples/flowchart.commands.txt | node dist/main.js
 npm test
 ```
 
-`npm test` 先编译 TypeScript，再运行 Node 内置测试；无需安装测试框架。当前使用全局 TypeScript，项目依赖为已获批准安装的 saxes 和 @types/node@20；本轮通过编译及 **46 项测试**。`npm run check` 可以只进行类型检查。
+`npm test` 先编译 TypeScript，再运行 Node 内置测试；无需安装测试框架。当前使用全局 TypeScript，项目依赖为已获批准安装的 saxes 和 @types/node@20；当前编译和 **118 项测试**全部通过。`npm run check` 可以只进行类型检查。
+
+按 2026-10-25 的决定，批量测试先使用明确列出的固定用例：
+
+```powershell
+npm run test:fixed
+```
+
+本命令执行新增的 72 项固定测试：14 个正常场景、47 个非法命令、10 个 move/scale 边界用例和 1 个命令覆盖检查，覆盖全部目标命令及六种图形。[固定用例说明](doc/fixed-test-cases.md)列出用例编号、覆盖内容及运行方式；输入和预期值保存在 tests/fixtures/fixed-command-cases.json。
+
+本轮代码符合性检查仅针对 phase_cli_1.md 的“2.1 实现范式”，未发现违规项，详见[检查记录](doc/implementation-paradigm-check.md)。
 
 项目依赖记录在 package.json 和 package-lock.json；换一台电脑时须先按上述安装约定完成依赖准备。第三方 saxes 声明与当前编译器的内部约束有兼容差异，因此使用 skipLibCheck 跳过依赖声明自身检查；项目源码仍开启 strict 和 noEmitOnError。
 
@@ -115,6 +125,8 @@ undone.inverse.execute(context);              // 重做
 
 - [架构方案、PlantUML 图与过程记录](doc/README.md)
 - [撤销、重做与隐藏临时容器伪代码](doc/undo_redo_pseudocode.md)
+- [固定测试用例与覆盖范围](doc/fixed-test-cases.md)
+- [2.1 实现范式检查记录](doc/implementation-paradigm-check.md)
 - [完整需求与命令说明](phase_cli_1.md)
 
 撤销重做采用 Command 模式：每次执行编辑或历史命令时，即时生成对应的反向命令。删除将原对象移入不可由用户访问、不显示、不参与 SVG 序列化的临时容器；禁止使用文档快照。

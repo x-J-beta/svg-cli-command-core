@@ -10,6 +10,8 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "pretest": "npm run build",
     "test": "node --test",
+    "pretest:fixed": "npm run build",
+    "test:fixed": "node --test tests/fixed-cases.test.mjs tests/move-scale.test.mjs",
     "precli": "npm run build",
     "cli": "node dist/main.js"
   },

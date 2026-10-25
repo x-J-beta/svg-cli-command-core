@@ -1,0 +1,220 @@
+{
+  "targetCommands": ["init", "read", "save", "canvas", "create", "delete", "move", "scale", "set", "group", "ungroup", "addto", "front", "back", "tree", "show", "help", "undo", "redo", "exit"],
+  "files": {
+    "import.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"200\"><rect x=\"1\" y=\"2\" width=\"3\" height=\"4\"/><rect id=\"rect1\"/><text id=\"imported\" x=\"5\" y=\"6\">A &amp; B</text></svg>",
+    "broken.svg": "<svg><g></svg>"
+  },
+  "cases": [
+    {
+      "id": "F01", "title": "help、默认画布、查询、调整尺寸与退出",
+      "steps": [
+        {"command": "help", "output": ["init [w] [h]", "move <id> <dx> <dy>", "scale <id> <factor>", "exit"]},
+        {"command": "init", "canvas": [800, 600]},
+        {"command": "canvas", "output": ["canvas 800x600"]},
+        {"command": "canvas 320 240", "canvas": [320, 240]},
+        {"command": "tree", "output": ["svg (320x240)"]},
+        {"command": "exit", "exit": true}
+      ]
+    },
+    {
+      "id": "F02", "title": "六种类型、指定父容器、属性和子树显示",
+      "setup": ["init", "create g scene"],
+      "steps": [
+        {"command": "create rect r 10 20 100 50 #abc in scene", "properties": {"r": {"x": 10, "y": 20, "width": 100, "height": 50, "fill": "#abc"}}},
+        {"command": "create circle c 30 40 5 in scene", "properties": {"c": {"cx": 30, "cy": 40, "r": 5}}},
+        {"command": "create ellipse e 40 50 6 7 in scene", "properties": {"e": {"cx": 40, "cy": 50, "rx": 6, "ry": 7}}},
+        {"command": "create line l 1 2 3 4 black in scene", "properties": {"l": {"x1": 1, "y1": 2, "x2": 3, "y2": 4, "stroke": "black"}}},
+        {"command": "create text t 5 6 \"开始 Hello\" in scene", "properties": {"t": {"x": 5, "y": 6, "text": "开始 Hello"}}},
+        {"command": "set t text \"changed text\"", "properties": {"t": {"text": "changed text"}}},
+        {"command": "set r width 25.5", "properties": {"r": {"width": 25.5}}},
+        {"command": "set scene fill blue", "properties": {"scene": {"fill": "blue"}}},
+        {"command": "tree scene", "output": ["g#scene", "rect#r", "circle#c", "ellipse#e", "line#l", "text#t"]},
+        {"command": "show r", "output": ["parent=g#scene", "width=25.5"]}
+      ]
+    },
+    {
+      "id": "M01", "title": "矩形移动、原点缩放与逐步撤销重做",
+      "setup": ["init", "create rect r 10 20 100 50"],
+      "steps": [
+        {"command": "move r -2.5 0.25", "properties": {"r": {"x": 7.5, "y": 20.25, "width": 100, "height": 50}}},
+        {"command": "scale r 2", "properties": {"r": {"x": 15, "y": 40.5, "width": 200, "height": 100}}},
+        {"command": "undo", "properties": {"r": {"x": 7.5, "y": 20.25, "width": 100, "height": 50}}},
+        {"command": "undo", "properties": {"r": {"x": 10, "y": 20, "width": 100, "height": 50}}},
+        {"command": "redo", "properties": {"r": {"x": 7.5, "y": 20.25}}},
+        {"command": "redo", "properties": {"r": {"x": 15, "y": 40.5, "width": 200, "height": 100}}}
+      ]
+    },
+    {
+      "id": "M02", "title": "圆的负坐标移动和小于 1 的缩放",
+      "setup": ["init", "create circle c -10 20 8"],
+      "steps": [
+        {"command": "move c 3 -4", "properties": {"c": {"cx": -7, "cy": 16, "r": 8}}},
+        {"command": "scale c 0.5", "properties": {"c": {"cx": -3.5, "cy": 8, "r": 4}}},
+        {"command": "undo", "properties": {"c": {"cx": -7, "cy": 16, "r": 8}}}
+      ]
+    },
+    {
+      "id": "M03", "title": "椭圆的位置和两个半径均参与缩放",
+      "setup": ["init", "create ellipse e 4 -8 6 10"],
+      "steps": [
+        {"command": "move e -2 3", "properties": {"e": {"cx": 2, "cy": -5, "rx": 6, "ry": 10}}},
+        {"command": "scale e 2", "properties": {"e": {"cx": 4, "cy": -10, "rx": 12, "ry": 20}}},
+        {"command": "undo", "properties": {"e": {"cx": 2, "cy": -5, "rx": 6, "ry": 10}}}
+      ]
+    },
+    {
+      "id": "M04", "title": "线段两个端点均移动和缩放",
+      "setup": ["init", "create line l -2 4 10 -8 black"],
+      "steps": [
+        {"command": "move l 3 -1", "properties": {"l": {"x1": 1, "y1": 3, "x2": 13, "y2": -9}}},
+        {"command": "scale l 2", "properties": {"l": {"x1": 2, "y1": 6, "x2": 26, "y2": -18, "stroke": "black"}}},
+        {"command": "undo", "properties": {"l": {"x1": 1, "y1": 3, "x2": 13, "y2": -9}}}
+      ]
+    },
+    {
+      "id": "M05", "title": "文字只改变位置，文本和描边保持不变",
+      "setup": ["init", "create text t 1.5 -2 \"开始 & Hello\"", "set t stroke-width 2"],
+      "steps": [
+        {"command": "move t -0.5 3", "properties": {"t": {"x": 1, "y": 1, "text": "开始 & Hello", "stroke-width": 2}}},
+        {"command": "scale t 4", "properties": {"t": {"x": 4, "y": 4, "text": "开始 & Hello", "stroke-width": 2}}},
+        {"command": "undo", "properties": {"t": {"x": 1, "y": 1, "text": "开始 & Hello"}}}
+      ]
+    },
+    {
+      "id": "M06", "title": "多层容器递归和容器外兄弟不受影响",
+      "setup": ["init", "create g scene", "create g nested in scene", "create g inner in nested", "create rect r 1 2 3 4 in inner", "create text t 5 6 \"nested\" in nested", "create circle outside 7 8 9"],
+      "steps": [
+        {"command": "move scene 10 -2", "properties": {"r": {"x": 11, "y": 0, "width": 3, "height": 4}, "t": {"x": 15, "y": 4}, "outside": {"cx": 7, "cy": 8, "r": 9}}},
+        {"command": "scale scene 2", "properties": {"r": {"x": 22, "y": 0, "width": 6, "height": 8}, "t": {"x": 30, "y": 8}, "outside": {"cx": 7, "cy": 8, "r": 9}}, "children": {"scene": ["nested"], "nested": ["inner", "t"], "inner": ["r"]}},
+        {"command": "undo", "properties": {"r": {"x": 11, "y": 0, "width": 3, "height": 4}, "t": {"x": 15, "y": 4}}},
+        {"command": "undo", "properties": {"r": {"x": 1, "y": 2}, "t": {"x": 5, "y": 6}}}
+      ]
+    },
+    {
+      "id": "M07", "title": "空容器、零位移和倍率 1 都是合法编辑",
+      "setup": ["init", "create g empty", "create rect r 1 2 3 4"],
+      "steps": [
+        {"command": "move empty 0 0", "children": {"empty": []}},
+        {"command": "undo"}, {"command": "redo"},
+        {"command": "scale empty 1", "children": {"empty": []}},
+        {"command": "move r 0 0", "properties": {"r": {"x": 1, "y": 2, "width": 3, "height": 4}}},
+        {"command": "scale r 1", "properties": {"r": {"x": 1, "y": 2, "width": 3, "height": 4}}}
+      ]
+    },
+    {
+      "id": "F03", "title": "带 index 迁移、前后排序及循环迁移错误",
+      "setup": ["init", "create g g", "create rect a 0 0 1 1 in g", "create rect b 0 0 1 1 in g", "create rect c 0 0 1 1 in g"],
+      "steps": [
+        {"command": "front a", "children": {"g": ["b", "c", "a"]}},
+        {"command": "undo", "children": {"g": ["a", "b", "c"]}},
+        {"command": "back c", "children": {"g": ["c", "a", "b"]}},
+        {"command": "addto g c 2", "children": {"g": ["a", "b", "c"]}},
+        {"command": "addto g a", "children": {"g": ["b", "c", "a"]}},
+        {"command": "undo", "children": {"g": ["a", "b", "c"]}},
+        {"command": "addto g g", "error": "cannot move a container into its own descendant"}
+      ]
+    },
+    {
+      "id": "F04", "title": "跨父级分组、嵌套解组和撤销",
+      "setup": ["init", "create g left", "create g right", "create rect a 0 0 1 1 in left", "create rect tail 0 0 1 1 in left", "create circle b 1 2 3 in right"],
+      "steps": [
+        {"command": "group pair b a", "children": {"pair": ["a", "b"], "left": ["pair", "tail"], "right": []}},
+        {"command": "ungroup pair", "children": {"left": ["a", "b", "tail"]}, "absent": ["pair"]},
+        {"command": "undo", "children": {"pair": ["a", "b"], "left": ["pair", "tail"]}},
+        {"command": "undo", "children": {"left": ["a", "tail"], "right": ["b"]}, "absent": ["pair"]},
+        {"command": "redo", "children": {"pair": ["a", "b"]}}
+      ]
+    },
+    {
+      "id": "F05", "title": "删除子树、恢复原位置与新编辑清空 redo",
+      "setup": ["init", "create g g", "create rect a 0 0 1 1 in g", "create circle b 1 2 3 in g"],
+      "steps": [
+        {"command": "delete g", "absent": ["g", "a", "b"], "children": {"$root": []}},
+        {"command": "undo", "children": {"$root": ["g"], "g": ["a", "b"]}},
+        {"command": "redo", "absent": ["g", "a", "b"]},
+        {"command": "undo"}, {"command": "move a 1 2"}, {"command": "undo"},
+        {"command": "set a fill red"}, {"command": "redo", "error": "nothing to redo"}
+      ]
+    },
+    {
+      "id": "F06", "title": "导入补 id、XML 转义、删除隔离、保存路径与 I/O 屏障",
+      "steps": [
+        {"command": "read import.svg", "output": ["warning: assigned id rect2 to unnamed <rect>", "read import.svg"], "canvas": [400, 200], "properties": {"rect2": {"x": 1, "y": 2, "width": 3, "height": 4}, "imported": {"text": "A & B"}}},
+        {"command": "undo", "error": "undo not allowed after io command"},
+        {"command": "set imported text \"<&> Hello\""}, {"command": "delete rect1"},
+        {"command": "save \"my drawing.svg\"", "saved": {"path": "my drawing.svg", "includes": ["&lt;&amp;&gt; Hello", "id=\"rect2\""], "excludes": ["id=\"rect1\"", "temporary"]}},
+        {"command": "redo", "error": "undo not allowed after io command"},
+        {"command": "move rect2 2 3"},
+        {"command": "save", "saved": {"path": "my drawing.svg", "includes": ["x=\"3\"", "y=\"5\""]}},
+        {"command": "init 10 20", "canvas": [10, 20], "children": {"$root": []}},
+        {"command": "read \"my drawing.svg\"", "canvas": [400, 200], "properties": {"rect2": {"x": 3, "y": 5}, "imported": {"text": "<&> Hello"}}}
+      ]
+    },
+    {
+      "id": "F07", "title": "失败读写与非法编辑保留 redo，成功调整画布建立屏障",
+      "setup": ["init", "create rect r 1 2 3 4", "move r 2 3", "undo"],
+      "steps": [
+        {"command": "read missing.svg", "error": "cannot read file: missing.svg"},
+        {"command": "read broken.svg", "error": "invalid SVG"},
+        {"command": "save readonly.svg", "error": "cannot write file: readonly.svg"},
+        {"command": "scale r 0", "error": "scale factor must be positive"},
+        {"command": "canvas", "canvas": [800, 600]},
+        {"command": "redo", "properties": {"r": {"x": 3, "y": 5}}},
+        {"command": "canvas 320 240", "canvas": [320, 240]},
+        {"command": "undo", "error": "undo not allowed after io command"},
+        {"command": "set r fill blue"}, {"command": "undo"},
+        {"command": "show r", "output": ["rect#r", "x=3", "y=5"]}
+      ]
+    }
+  ],
+  "invalidSetup": ["init", "create g outer", "create g inner in outer", "create rect r 1 2 3 4 in inner", "create text t 5 6 \"original\" in inner"],
+  "invalidCases": [
+    {"id": "E01", "command": "tree", "setup": [], "error": "no document"},
+    {"id": "E02", "command": "save", "setup": [], "error": "no document"},
+    {"id": "E03", "command": "unknown command", "error": "unknown command: unknown"},
+    {"id": "E04", "command": "move r 1", "error": "usage:"},
+    {"id": "E05", "command": "move r 1 2 3", "error": "usage:"},
+    {"id": "E06", "command": "move missing 1 2", "error": "no such shape: missing"},
+    {"id": "E07", "command": "move r NaN 2", "error": "expected finite number"},
+    {"id": "E08", "command": "move r 1 Infinity", "error": "expected finite number"},
+    {"id": "E09", "command": "move r abc 2", "error": "expected finite number"},
+    {"id": "E10", "command": "scale r", "error": "usage:"},
+    {"id": "E11", "command": "scale r 2 3", "error": "usage:"},
+    {"id": "E12", "command": "scale missing 2", "error": "no such shape: missing"},
+    {"id": "E13", "command": "scale r 0", "error": "scale factor must be positive"},
+    {"id": "E14", "command": "scale r -2", "error": "scale factor must be positive"},
+    {"id": "E15", "command": "scale r Infinity", "error": "expected finite number"},
+    {"id": "E16", "command": "scale empty 0", "setup": ["init", "create g empty"], "error": "scale factor must be positive"},
+    {"id": "E17", "command": "set r id other", "error": "unknown attribute: id"},
+    {"id": "E18", "command": "set r text other", "error": "unknown attribute: text"},
+    {"id": "E19", "command": "set outer x 2", "error": "unknown attribute: x"},
+    {"id": "E20", "command": "set r width -1", "error": "non-negative"},
+    {"id": "E21", "command": "set r stroke-width -1", "error": "non-negative"},
+    {"id": "E22", "command": "create rect r 0 0 1 1", "error": "id already exists: r"},
+    {"id": "E23", "command": "create box b 0 0 1 1", "error": "unknown shape type: box"},
+    {"id": "E24", "command": "create circle c 0 0 -1", "error": "non-negative"},
+    {"id": "E25", "command": "create rect b 0 0 1", "error": "invalid parameters for rect"},
+    {"id": "E26", "command": "create rect b 0 0 1 1 in missing", "error": "no such container: missing"},
+    {"id": "E27", "command": "create rect b 0 0 1 1 in r", "error": "not a container: r"},
+    {"id": "E28", "command": "addto r t", "error": "not a container: r"},
+    {"id": "E29", "command": "addto inner outer", "error": "cannot move a container into its own descendant"},
+    {"id": "E30", "command": "addto inner inner", "error": "cannot move a container into its own descendant"},
+    {"id": "E31", "command": "addto inner r -1", "error": "invalid insertion index"},
+    {"id": "E32", "command": "addto inner r 0.5", "error": "invalid insertion index"},
+    {"id": "E33", "command": "addto inner r 99", "error": "invalid insertion index"},
+    {"id": "E34", "command": "group bad outer r", "error": "cannot group a container into its own descendant"},
+    {"id": "E35", "command": "group bad r r", "error": "cannot group the same shape more than once"},
+    {"id": "E36", "command": "ungroup outer", "error": "cannot ungroup top-level container: outer"},
+    {"id": "E37", "command": "ungroup r", "error": "not a container: r"},
+    {"id": "E38", "command": "delete missing", "error": "no such shape: missing"},
+    {"id": "E39", "command": "canvas 0 200", "error": "canvas dimensions must be positive"},
+    {"id": "E40", "command": "canvas 100", "error": "usage:"},
+    {"id": "E41", "command": "save", "error": "no file path"},
+    {"id": "E42", "command": "show missing", "error": "no such shape: missing"},
+    {"id": "E43", "command": "set t text \"unterminated", "error": "unterminated quoted argument"},
+    {"id": "E44", "command": "create text \"\" 0 0 \"empty id\"", "error": "id must not be empty"},
+    {"id": "E45", "command": "redo", "error": "nothing to redo"},
+    {"id": "E46", "command": "scale r NaN", "error": "expected finite number"},
+    {"id": "E47", "command": "move empty 1 NaN", "setup": ["init", "create g empty"], "error": "expected finite number"}
+  ]
+}

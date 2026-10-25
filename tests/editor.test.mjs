@@ -138,7 +138,7 @@ test("canvas query keeps redo, while successful resize establishes a barrier", a
   await run("set a fill blue"); await run("undo");
 });
 
-test("overflow during a geometry batch restores every already changed property", async () => {
+test("geometry overflow leaves all properties unchanged", async () => {
   const { session, run } = editor();
   await run("init"); await run("create rect r 0.1 0.2 1e308 1");
   await assert.rejects(run("scale r 2"), /finite/);

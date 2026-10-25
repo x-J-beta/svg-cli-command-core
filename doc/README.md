@@ -118,6 +118,7 @@ ReversibleCommand <|.. MoveCommand
 ReversibleCommand <|.. ScaleCommand
 ReversibleCommand <|.. GroupCommand
 ReversibleCommand <|.. UngroupCommand
+CommandBatch <|-- GeometryCommandBatch
 class EditResult {
   +inverse: ReversibleCommand
   +feedback: string
@@ -144,8 +145,8 @@ DeleteCommand ..> AddToCommand : 目标为隐藏容器
 CreateCommand ..> AddToCommand : 生成撤销命令
 AddToCommand ..> AddToCommand : 原位置的新命令
 CommandBatch o-- "0..*" ReversibleCommand : 有序子命令
-MoveCommand ..> CommandBatch : 属性变更
-ScaleCommand ..> CommandBatch : 属性变更
+MoveCommand ..> GeometryCommandBatch : 属性变更
+ScaleCommand ..> GeometryCommandBatch : 属性变更
 GroupCommand ..> CommandBatch : 节点迁移
 UngroupCommand ..> CommandBatch : 节点迁移
 @enduml
@@ -170,6 +171,8 @@ UngroupCommand ..> CommandBatch : 节点迁移
 `SetPropertyCommand` 记录目标属性值，包含“属性不存在”的状态；执行时捕获原值生成逆命令。`AddToCommand` 记录节点、目标父容器及可选位置，执行时捕获原父容器与位置生成逆命令。这些命令通过领域方法修改对象，不能直接修改内部数组或字段。
 
 `CommandBatch` 顺序执行子命令，逆命令按相反顺序组成新批次。group 即使包含多次节点迁移，仍只占一个历史单元。move/scale 由图形多态计算几何目标值，组合为属性修改批次；撤销写回原数值，避免通过乘倒数恢复浮点数。
+
+GeometryCommandBatch 在首次写入前校验全部计算结果为有限数，然后复用 CommandBatch 执行和回退；空容器、零位移和倍率 1 仍是合法的一个撤销单元。
 
 addto 的可选 index 从 0 开始，省略时追加；同父容器迁移按移除节点后的列表解释。内部传递容器引用，CLI 只允许解析可见 g 的 id。根和隐藏临时容器不是用户可寻址的 g。
 
@@ -289,7 +292,7 @@ end note
 
 当前全部模块按上述方向实现。DocumentPresenter 放在 application，使 CLI 不直接依赖 domain；FileSvgRepository 只引用应用层的存储接口和读入结果类型。查找通过可见树遍历完成，尚未维护 id 索引；只有性能需要时再增加索引。
 
-本轮实际扫描了 63 个 TypeScript 文件及 249 处导入/重导出，未发现层级违规或类名与文件名不一致；每个类独立成文件。
+2026-10-18 的依赖检查扫描了 63 个 TypeScript 文件及 249 处导入/重导出，未发现层级违规或类名与文件名不一致；每个类独立成文件。2026-10-25 按用户要求，仅另行检查第 2.1 节实现范式，见 implementation-paradigm-check.md。
 
 ### 1.4 变化点假设
 
@@ -331,6 +334,7 @@ end note
 | 2026-10-18 | 测试发现旧版 Node 在 Windows 不展开命令行通配符，沙箱临时目录限制文件替换 | 测试使用 node --test 自动发现；文件测试在已校验的工作区临时目录运行并清理；46 项测试通过 |
 | 2026-10-18 | 用户替换安装规则 | 全部内容位于工作区且预计总安装大小小于 100 MB 时可直接安装；其他或不确定情况先逐项批准。Git 操作限制继续保留 |
 | 2026-10-22 | 用户要求按已实现的功能分别提交 | 按构建配置、图形模型、逆命令与历史、移动缩放、分组解组、SVG 读写、CLI、文档示例组织八笔提交；不改变已有提交历史 |
+| 2026-10-25 | 用户确认 move/scale 用属性命令批次完成，并要求先用固定用例、仅检查第 2.1 节，然后实现与测试分别提交 | 增加几何结果预检查；新增 72 项显式固定测试，完整 118 项回归通过；第 2.1 节未发现违规项 |
 
 后续实现发现的设计调整应追加记录，不能把计划直接改写成已经验证的结论。
 
@@ -349,6 +353,8 @@ end note
 ## 4. 质量保证手段
 
 2026-10-18：TypeScript 7.0.2 编译通过，npm test 的 **46 项测试全部通过**：23 项逆命令核心测试、13 项编辑器集成测试、8 项 SVG 测试、2 项词法及真实 CLI 测试。流程图脚本已通过真实 CLI 回放，产物为 examples/flowchart.svg。
+
+2026-10-25：move/scale 预检查完成，新增 72 项固定测试，完整编译及 **118 项测试全部通过**；新增测试不使用随机种子或参数矩阵。测试编号和目标功能覆盖见 [fixed-test-cases.md](fixed-test-cases.md)。本次规范检查范围仅为“2.1 实现范式”，见 [implementation-paradigm-check.md](implementation-paradigm-check.md)。
 
 已执行的验证：
 
