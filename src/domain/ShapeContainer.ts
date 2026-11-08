@@ -12,6 +12,15 @@ export class ShapeContainer {
 
   indexOf(shape: Shape): number { return this.#children.indexOf(shape); }
 
+  get canUngroup(): boolean { return true; }
+  canRemoveChild(_shape: Shape): boolean { return true; }
+
+  /** Providers assemble new subtrees before they are attached to a document. */
+  appendDetachedChild(shape: Shape): void {
+    if (!this.owner || this.owner.parent !== null) throw new Error("container is not detached");
+    this.insertInternal(shape, this.size);
+  }
+
   /** @internal Called by validated document operations. */
   insertInternal(shape: Shape, index: number): void {
     if (shape.parent !== null) throw new Error("shape already has a parent");

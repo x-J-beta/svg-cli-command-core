@@ -17,7 +17,15 @@ export abstract class Shape {
   get id(): string { return this.#id; }
   get parent(): ShapeContainer | null { return this.#parent; }
   get tagName(): string { return "shape"; }
+  get type(): string { return this.tagName; }
   get label(): string { return `${this.tagName}#${this.id}`; }
+  get treeLabel(): string { return this.label; }
+  creationFeedback(parent?: string): string {
+    return `${this.label} created${parent ? ` in ${parent}` : ""}`;
+  }
+  moveFeedback(dx: number, dy: number): readonly [applied: string, undone: string] {
+    return [`${this.label} moved by (${dx},${dy})`, `${this.label} move undone`];
+  }
   get creationParameters(): readonly CreationParameter[] { return []; }
   get propertyDefinitions(): readonly PropertyDefinition[] {
     return [

@@ -2,7 +2,15 @@
 
 本项目按照 [Lab1 Phase 1 需求](phase_cli_1.md)，使用 TypeScript 和面向对象方式实现 SVG 命令行编辑器。
 
-已完成基础 CLI：六种图形、SVG 读写、画布、创建和删除、移动和缩放、属性修改、分组和解组、排列、树形显示、撤销重做。box 和插件加载属于后续阶段。
+已完成基础 CLI：六种图形、SVG 读写、画布、创建和删除、移动和缩放、属性修改、分组和解组、排列、树形显示、撤销重做。二期 CLI 已接入四个扩展点。
+
+## 二期进度
+
+本轮先完成 CLI 的 `ShapeProvider`、`Command`、`TreeDecorator`、`AttributeHandler`。默认装配通过注册表加载一期命令和六种图形。可选扩展可由代码调用 `ExtensionRegistry.activate` 注册，激活失败时整批撤销暂存注册。属性扩展通过受限事务写入，多次写入合并成一次撤销。
+
+VS Code 扩展、配置装配，以及 `stats`、`dir`、`box` 和树标签仍属于后续实施节点。
+
+[四个扩展点清单](doc/README.md#四个扩展点) · [二期设计与 PlantUML 依赖图](doc/README.md#二期设计方案) · [二期任务书](phase_cli_2.md)
 
 ## 启动与使用
 
@@ -89,7 +97,7 @@ Get-Content -Encoding utf8 examples/flowchart.commands.txt | node dist/main.js
 npm test
 ```
 
-`npm test` 先编译 TypeScript，再运行 Node 内置测试；无需安装测试框架。当前使用全局 TypeScript，项目依赖为已获批准安装的 saxes 和 @types/node@20；当前编译和 **118 项测试**全部通过。`npm run check` 可以只进行类型检查。
+`npm test` 先编译 TypeScript，再运行 Node 内置测试；无需安装测试框架。当前使用全局 TypeScript，项目依赖为已获批准安装的 saxes 和 @types/node@20。扩展点重构后 **128 项测试**全部通过，其中 118 项是一期回归，10 项是二期扩展点固定用例。`npm run check` 可以只进行类型检查。
 
 按 2026-10-25 的决定，批量测试先使用明确列出的固定用例：
 

@@ -32,6 +32,7 @@ export class CommandBatch implements ReversibleCommand {
       (rollbackContext) => {
         for (const result of reversed) result.rollback(rollbackContext);
       },
+      applied.flatMap((result) => result.changedIds),
     );
   }
 

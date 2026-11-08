@@ -2,6 +2,7 @@ import type { Shape } from "../../domain/Shape.js";
 import type { ShapeContainer } from "../../domain/ShapeContainer.js";
 import type { CommandContext } from "../CommandContext.js";
 import { EditResult } from "../EditResult.js";
+import { DocumentChanges } from "../DocumentChanges.js";
 import { AddToCommand } from "./AddToCommand.js";
 import type { ReversibleCommand } from "./ReversibleCommand.js";
 
@@ -20,11 +21,12 @@ export class CreateCommand implements ReversibleCommand {
     const inverse = new AddToCommand(
       this.#node, context.document.temporaryForCommands(),
     );
-    context.document.attachNew(this.#node, this.#target, this.#index);
     const parent = this.#target?.owner;
-    return new EditResult(inverse, `${this.#node.label} created${parent ? ` in ${parent.label}` : ""}`, (rollbackContext) => {
+    const feedback = this.#node.creationFeedback(parent?.label);
+    context.document.attachNew(this.#node, this.#target, this.#index);
+    return new EditResult(inverse, feedback, (rollbackContext) => {
       rollbackContext.document.discardUncommittedCreation(this.#node);
-    });
+    }, [...DocumentChanges.path(this.#node), ...DocumentChanges.subtree(this.#node)]);
   }
 
   retainedNodes(): ReadonlySet<Shape> {

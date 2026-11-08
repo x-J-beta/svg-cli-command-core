@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import {
   SvgDocument, CommandContext, CommandHistory, Rect, Group,
   MoveCommand, ScaleCommand, DeleteCommand, CommandBatch,
-} from "../dist/application/commands/index.js";
+} from "svg-cli-command-core";
 import { SvgReader } from "../dist/infrastructure/svg/SvgReader.js";
+import { CliAssembly } from "../dist/host/CliAssembly.js";
 import { WriteRecordingRect } from "./helpers/WriteRecordingRect.mjs";
 
 function attach(shape) {
@@ -116,7 +117,7 @@ test("G08 hidden, detached and foreign shapes cannot be moved or scaled", () => 
 });
 
 test("G09 imported transform, font size, text and stroke width stay unchanged", () => {
-  const document = new SvgReader().parse('<svg><g id="g" transform="translate(10,20) scale(3)"><rect id="r" x="1" y="2" width="3" height="4" stroke-width="2"/><text id="t" x="5" y="6" font-size="18">Hello 世界</text></g></svg>').document;
+  const document = new SvgReader(new CliAssembly().factory).parse('<svg><g id="g" transform="translate(10,20) scale(3)"><rect id="r" x="1" y="2" width="3" height="4" stroke-width="2"/><text id="t" x="5" y="6" font-size="18">Hello 世界</text></g></svg>').document;
   const context = new CommandContext(document);
   const history = new CommandHistory();
   const group = document.findActiveById("g");

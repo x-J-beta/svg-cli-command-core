@@ -13,10 +13,8 @@ export class MoveCommand implements ReversibleCommand {
   execute(context: CommandContext): EditResult {
     context.document.requireActive(this.#node);
     if (!Number.isFinite(this.#dx) || !Number.isFinite(this.#dy)) throw new Error("move offsets must be finite numbers");
-    return new GeometryCommandBatch(
-      this.#node.moveTargets(this.#dx, this.#dy),
-      `${this.#node.label} moved by (${this.#dx},${this.#dy})`, `${this.#node.label} move undone`,
-    ).execute(context);
+    const [applied, undone] = this.#node.moveFeedback(this.#dx, this.#dy);
+    return new GeometryCommandBatch(this.#node.moveTargets(this.#dx, this.#dy), applied, undone).execute(context);
   }
   retainedNodes(): ReadonlySet<Shape> { return new Set([this.#node]); }
 }

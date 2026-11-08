@@ -2,6 +2,7 @@ import type { PropertyValue } from "../../domain/PropertyValue.js";
 import type { Shape } from "../../domain/Shape.js";
 import type { CommandContext } from "../CommandContext.js";
 import { EditResult } from "../EditResult.js";
+import { DocumentChanges } from "../DocumentChanges.js";
 import type { ReversibleCommand } from "./ReversibleCommand.js";
 
 export class SetPropertyCommand implements ReversibleCommand {
@@ -20,7 +21,8 @@ export class SetPropertyCommand implements ReversibleCommand {
     const previous = this.#node.readProperty(this.#name);
     const inverse = new SetPropertyCommand(this.#node, this.#name, previous);
     this.#node.writeProperty(this.#name, this.#value);
-    return new EditResult(inverse, `${this.#node.label} updated: ${this.#name}=${this.#value === undefined ? "(unset)" : JSON.stringify(this.#value)}`);
+    return new EditResult(inverse, `${this.#node.label} updated: ${this.#name}=${this.#value === undefined ? "(unset)" : JSON.stringify(this.#value)}`,
+      undefined, DocumentChanges.path(this.#node));
   }
 
   retainedNodes(): ReadonlySet<Shape> { return new Set([this.#node]); }

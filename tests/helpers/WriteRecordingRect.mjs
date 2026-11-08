@@ -1,4 +1,4 @@
-import { Rect } from "../../dist/application/commands/index.js";
+import { Rect } from "svg-cli-command-core";
 
 export class WriteRecordingRect extends Rect {
   #writes = 0;

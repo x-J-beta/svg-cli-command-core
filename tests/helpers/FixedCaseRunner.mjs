@@ -1,17 +1,18 @@
 import assert from "node:assert/strict";
-import { EditorSession } from "../../dist/application/EditorSession.js";
-import { CommandDispatcher } from "../../dist/application/CommandDispatcher.js";
+import { CliAssembly } from "../../dist/host/CliAssembly.js";
 import { Tokenizer } from "../../dist/cli/Tokenizer.js";
 import { FixedSvgRepository } from "./FixedSvgRepository.mjs";
 
 export class FixedCaseRunner {
   #repository;
   #session;
-  #dispatcher = new CommandDispatcher();
+  #dispatcher;
   #tokenizer = new Tokenizer();
   constructor(files) {
-    this.#repository = new FixedSvgRepository(files);
-    this.#session = new EditorSession(this.#repository);
+    const assembly = new CliAssembly();
+    this.#repository = new FixedSvgRepository(assembly.factory, files);
+    this.#session = assembly.createSession(this.#repository);
+    this.#dispatcher = assembly.dispatcher;
   }
 
   async run(testCase, defaultSetup = []) {

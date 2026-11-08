@@ -1,57 +1,53 @@
-import type { Shape } from "./Shape.js";
-import { Rect } from "./Rect.js";
-import { Circle } from "./Circle.js";
-import { Ellipse } from "./Ellipse.js";
-import { Line } from "./Line.js";
-import { Text } from "./Text.js";
-import { Group } from "./Group.js";
+import { Shape } from "./Shape.js";
+import type { ShapeProvider } from "./ShapeProvider.js";
+import type { SvgShapeInput } from "./SvgShapeInput.js";
+import { ShapeProperties } from "./ShapeProperties.js";
 import type { PropertyValue } from "./PropertyValue.js";
 
-/** The only shape-name dispatch point. Future work: registered ShapeProviders. */
 export class ShapeFactory {
-  readonly #constructors = new Map<string, (id: string) => Shape>([
-    ["rect", (id) => new Rect(id)], ["circle", (id) => new Circle(id)],
-    ["ellipse", (id) => new Ellipse(id)], ["line", (id) => new Line(id)],
-    ["text", (id) => new Text(id)], ["g", (id) => new Group(id)],
-  ]);
+  readonly #find: (type: string) => ShapeProvider | undefined;
+  constructor(find: (type: string) => ShapeProvider | undefined) { this.#find = find; }
 
   create(type: string, id: string): Shape {
-    const constructor = this.#constructors.get(type);
-    if (!constructor) throw new Error(`unknown shape type: ${type} (is the plugin loaded?)`);
-    return constructor(id);
+    const provider = this.requireProvider(type);
+    return this.validate(provider, id, provider.createEmpty ? provider.createEmpty(id) : provider.create(id, []));
   }
 
+  parseProperty(shape: Shape, name: string, raw: string): PropertyValue { return ShapeProperties.parse(shape, name, raw); }
+
   fromArguments(type: string, id: string, values: readonly string[]): Shape {
-    const shape = this.create(type, id);
-    const parameters = shape.creationParameters;
-    if (values.length < parameters.filter((item) => !item.optional).length || values.length > parameters.length) {
-      throw new Error(`invalid parameters for ${type}`);
+    const provider = this.requireProvider(type);
+    return this.validate(provider, id, provider.create(id, values));
+  }
+
+  fromSvg(input: SvgShapeInput): Shape {
+    const kind = input.attributes.get("data-kind");
+    const marked = kind === undefined ? undefined : this.#find(kind);
+    const provider = marked?.svgTag === input.tag ? marked : this.requireProvider(input.tag);
+    let children: readonly Shape[] | undefined;
+    const shape = this.validate(provider, input.id, provider.fromSvg({
+      tag: input.tag, id: input.id, attributes: input.attributes, text: input.text, hasChildren: input.hasChildren,
+      get children() { return children ??= Object.freeze([...input.children]); },
+    }));
+    const expected = children ?? input.children;
+    const actual = shape.asContainer()?.children ?? [];
+    if (actual.length !== expected.length || actual.some((child, index) => child !== expected[index])) {
+      throw new Error(`provider did not preserve SVG children: ${provider.name}`);
     }
-    values.forEach((value, index) => {
-      const parameter = parameters[index]!;
-      shape.writeProperty(parameter.name, this.parseProperty(shape, parameter.name, value));
-    });
     return shape;
   }
 
-  parseProperty(shape: Shape, name: string, raw: string): PropertyValue {
-    const definition = shape.propertyDefinitions.find((item) => item.name === name);
-    if (!definition) throw new Error(`unknown attribute: ${name}`);
-    if (definition.type === "string") return raw;
-    const value = raw.trim() === "" ? NaN : Number(raw);
-    if (!Number.isFinite(value)) throw new Error(`${name} must be a finite number`);
-    return value;
+  private requireProvider(type: string): ShapeProvider {
+    const provider = this.#find(type);
+    if (!provider) throw new Error(`unknown shape type: ${type} (is the plugin loaded?)`);
+    return provider;
   }
 
-  fromSvg(type: string, id: string, attributes: ReadonlyMap<string, string>, content: string): Shape {
-    const shape = this.create(type, id);
-    for (const [name, value] of attributes) {
-      if (name === "id") continue;
-      if (shape.propertyDefinitions.some((definition) => definition.name === name)) {
-        shape.writeProperty(name, this.parseProperty(shape, name, value));
-      } else shape.retainSvgAttribute(name, value);
+  private validate(provider: ShapeProvider, id: string, shape: Shape): Shape {
+    if (!(shape instanceof Shape) || shape.id !== id || shape.type !== provider.name || shape.parent !== null) {
+      if (shape instanceof Promise) void shape.catch(() => undefined);
+      throw new Error(`invalid shape returned by provider: ${provider.name}`);
     }
-    if (shape.textContent !== undefined) shape.writeProperty("text", content);
     return shape;
   }
 }

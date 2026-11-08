@@ -3,9 +3,12 @@ import { SvgWriter } from "../../dist/infrastructure/svg/SvgWriter.js";
 
 export class FixedSvgRepository {
   #files;
-  #reader = new SvgReader();
+  #reader;
   #writer = new SvgWriter();
-  constructor(files = {}) { this.#files = new Map(Object.entries(files)); }
+  constructor(factory, files = {}) {
+    this.#reader = new SvgReader(factory);
+    this.#files = new Map(Object.entries(files));
+  }
   async read(path) {
     if (!this.#files.has(path)) throw new Error(`cannot read file: ${path}`);
     try { return this.#reader.parse(this.#files.get(path)); }

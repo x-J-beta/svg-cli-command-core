@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   AddToCommand, CommandBatch, CommandContext, CommandHistory, CreateCommand,
   DeleteCommand, Group, SetPropertyCommand, SvgDocument,
-} from "../dist/application/commands/index.js";
+} from "svg-cli-command-core";
 import { TestShape } from "./helpers/TestShape.mjs";
 
 function fixture() {

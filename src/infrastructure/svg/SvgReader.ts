@@ -1,13 +1,13 @@
 import { SaxesParser } from "saxes";
 import { SvgDocument } from "../../domain/SvgDocument.js";
-import { ShapeFactory } from "../../domain/ShapeFactory.js";
-import type { ShapeContainer } from "../../domain/ShapeContainer.js";
+import type { ShapeFactory } from "../../domain/ShapeFactory.js";
+import type { Shape } from "../../domain/Shape.js";
 import { SvgReadResult } from "../../application/SvgReadResult.js";
 import { SvgElement } from "./SvgElement.js";
 
 export class SvgReader {
   readonly #factory: ShapeFactory;
-  constructor(factory = new ShapeFactory()) { this.#factory = factory; }
+  constructor(factory: ShapeFactory) { this.#factory = factory; }
 
   parse(xml: string): SvgReadResult {
     const root = this.parseXml(xml);
@@ -35,7 +35,9 @@ export class SvgReader {
     }
     const warnings: string[] = [];
     const counters = new Map<string, number>();
-    const append = (element: SvgElement, parent: ShapeContainer): void => {
+    const ids = new Map<SvgElement, string>();
+    for (const element of root.descendants()) {
+      if (element === root) continue;
       let id = element.attributes.get("id");
       if (id === undefined) {
         let next = counters.get(element.name) ?? 0;
@@ -43,15 +45,15 @@ export class SvgReader {
         counters.set(element.name, next); reserved.add(id);
         warnings.push(`warning: assigned id ${id} to unnamed <${element.name}>`);
       }
-      const shape = this.#factory.fromSvg(element.name, id, element.attributes, element.text);
-      const container = shape.asContainer();
-      if (!container && element.children.length > 0) throw new Error(`${shape.label} cannot contain elements`);
-      if (shape.textContent === undefined && element.text.trim() !== "") throw new Error(`unexpected text inside <${element.name}>`);
-      document.attachNew(shape, parent);
-      if (container) for (const child of element.children) append(child, container);
-    };
+      ids.set(element, id);
+    }
+    const materialize = (element: SvgElement): Shape => this.#factory.fromSvg({
+      tag: element.name, id: ids.get(element)!, attributes: element.attributes,
+      text: element.text, hasChildren: element.children.length > 0,
+      get children() { return element.children.map(materialize); },
+    });
     if (root.text.trim() !== "") throw new Error("unexpected text inside <svg>");
-    for (const child of root.children) append(child, document.root);
+    for (const child of root.children) document.attachNew(materialize(child));
     return new SvgReadResult(document, warnings);
   }
 

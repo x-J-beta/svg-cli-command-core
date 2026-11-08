@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "description": "Reversible SVG tree commands that generate their inverse on execution",
-  "exports": "./dist/application/commands/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./plugins": "./dist/application/plugins/index.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",

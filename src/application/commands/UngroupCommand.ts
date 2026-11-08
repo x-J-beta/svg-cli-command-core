@@ -13,6 +13,7 @@ export class UngroupCommand implements ReversibleCommand {
     const group = context.document.findActiveById(this.#id);
     const container = group.asContainer();
     if (!container) throw new Error(`not a container: ${this.#id}`);
+    if (!container.canUngroup) throw new Error(`cannot ungroup composite shape: ${this.#id}`);
     const position = context.document.placementOf(group);
     if (position.parent === context.document.root) throw new Error(`cannot ungroup top-level container: ${this.#id}`);
     return new CommandBatch([

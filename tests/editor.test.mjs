@@ -2,14 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { join, dirname, resolve, basename } from "node:path";
-import { EditorSession } from "../dist/application/EditorSession.js";
-import { CommandDispatcher } from "../dist/application/CommandDispatcher.js";
+import { CliAssembly } from "../dist/host/CliAssembly.js";
 import { Tokenizer } from "../dist/cli/Tokenizer.js";
-import { FileSvgRepository } from "../dist/infrastructure/svg/FileSvgRepository.js";
 
 function editor() {
-  const session = new EditorSession(new FileSvgRepository());
-  const dispatcher = new CommandDispatcher();
+  const assembly = new CliAssembly();
+  const { dispatcher } = assembly;
+  const session = assembly.createSession();
   const tokenizer = new Tokenizer();
   return { session, run: (line) => dispatcher.execute(tokenizer.tokenize(line), session) };
 }

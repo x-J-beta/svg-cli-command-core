@@ -1,5 +1,4 @@
 import type { Shape } from "../../domain/Shape.js";
-import { Group } from "../../domain/Group.js";
 import type { CommandContext } from "../CommandContext.js";
 import type { EditResult } from "../EditResult.js";
 import type { ReversibleCommand } from "./ReversibleCommand.js";
@@ -10,7 +9,10 @@ import { AddToCommand } from "./AddToCommand.js";
 export class GroupCommand implements ReversibleCommand {
   readonly #id: string;
   readonly #members: readonly string[];
-  constructor(id: string, members: readonly string[]) { this.#id = id; this.#members = [...members]; }
+  readonly #createGroup: (id: string) => Shape;
+  constructor(id: string, members: readonly string[], createGroup: (id: string) => Shape) {
+    this.#id = id; this.#members = [...members]; this.#createGroup = createGroup;
+  }
 
   execute(context: CommandContext): EditResult {
     if (this.#members.length === 0) throw new Error("group requires at least one shape");
@@ -25,10 +27,12 @@ export class GroupCommand implements ReversibleCommand {
     }
     const ordered = context.document.visibleShapes().filter((shape) => selected.has(shape));
     const position = context.document.placementOf(ordered[0]!);
-    const group = new Group(this.#id);
+    const group = this.#createGroup(this.#id);
+    const container = group.asContainer();
+    if (!container) throw new Error("group provider must create a container");
     return new CommandBatch([
       new CreateCommand(group, position.parent, position.index),
-      ...ordered.map((node) => new AddToCommand(node, group.asContainer())),
+      ...ordered.map((node) => new AddToCommand(node, container)),
     ], `${group.label} created with ${ordered.length} children`, `${group.label} grouping undone`).execute(context);
   }
   retainedNodes(): ReadonlySet<Shape> { return new Set(); }

@@ -1,4 +1,4 @@
-import { Shape } from "../../dist/application/commands/index.js";
+import { Shape } from "svg-cli-command-core";
 
 export class TestShape extends Shape {
   constructor(id) { super(id); }

@@ -71,6 +71,9 @@ export class SvgDocument {
 
   relocate(shape: Shape, target: ShapeContainer, index?: number): void {
     const old = this.placementOf(shape);
+    if (old.parent !== target && !old.parent.canRemoveChild(shape)) {
+      throw new Error(`cannot remove required child: ${shape.id}`);
+    }
     // The requested index refers to the destination AFTER removing this node.
     const available = target.size - (old.parent === target ? 1 : 0);
     const destinationIndex = index ?? available;

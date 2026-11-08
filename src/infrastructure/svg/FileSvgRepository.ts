@@ -10,7 +10,7 @@ import { SvgWriter } from "./SvgWriter.js";
 export class FileSvgRepository implements SvgRepository {
   readonly #reader: SvgReader;
   readonly #writer: SvgWriter;
-  constructor(reader = new SvgReader(), writer = new SvgWriter()) { this.#reader = reader; this.#writer = writer; }
+  constructor(reader: SvgReader, writer = new SvgWriter()) { this.#reader = reader; this.#writer = writer; }
 
   async read(path: string): Promise<SvgReadResult> {
     let xml: string;
