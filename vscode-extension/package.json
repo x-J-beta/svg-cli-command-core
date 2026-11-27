@@ -1,0 +1,39 @@
+{
+  "name": "svg-course-tools",
+  "displayName": "SVG Course Tools",
+  "description": "SVG file badges and native document outline for the course CLI project.",
+  "version": "0.0.2",
+  "publisher": "course271",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:xml"
+  ],
+  "main": "./dist/extension.js",
+  "capabilities": { "untrustedWorkspaces": { "supported": true } },
+  "contributes": {
+    "commands": [
+      {
+        "command": "svgCourse.showStatus",
+        "title": "SVG Course: Show Extension Status"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test tools/check-badges.cjs tools/check-outline.cjs",
+    "test:host": "npm run build && node tools/run-host-tests.cjs",
+    "package": "npm run build && powershell -NoProfile -ExecutionPolicy Bypass -File tools/package.ps1"
+  },
+  "devDependencies": {
+    "@types/vscode": "1.85.0"
+  },
+  "dependencies": {
+    "saxes": "6.0.0"
+  }
+}

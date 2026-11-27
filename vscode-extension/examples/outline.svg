@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240">
+  <g id="workflow">
+    <rect id="start" x="20" y="30" width="140" height="60" fill="#4a90d9"/>
+    <text x="35" y="65">开始</text>
+    <g id="nested">
+      <circle id="end" cx="300" cy="60" r="30" fill="#f5a623"/>
+    </g>
+  </g>
+</svg>

@@ -374,6 +374,16 @@ end note
 
 ### VS Code 扩展计划
 
+2026-11-27 已实现并安装 `vscode-extension/` 0.0.2, 包含 `[]` 文件标记、原生 Outline、源码区间和状态命令. `@types/vscode@1.85.0` 已经用户明确批准安装, 完整 TypeScript 编译通过. saxes 和 xmlchars 安装于扩展工作区并随 VSIX 打包. 当前通过 9 项固定测试和真实 VS Code 宿主的 H01-H03 场景, 已安装 VSIX 的运行代码也通过同样场景. CLI 的 128 项回归测试通过. [扩展 README](../vscode-extension/README.md) 包含安装、运行、测试、模式分析、复用评估和 AI 建议修正记录.
+
+验收证据状态如下. 文件标记的筛选和生命周期由替身测试验证. 原生符号层级、无 id 元素、源码选择区间、未保存编辑和不完整 XML 恢复通过真实宿主 API 测试. 用户批准了 Computer-Use 观察和截图, 但工具访问 VS Code 返回 `Computer Use was not approved to use code`. 原生 Outline 的界面观察、实际点击和两张截图尚待完成, 当前没有生成截图文件.
+
+源码导航补充. 用户反馈点击 `rect#start` 打开渲染视图后, 新增 H04 真实宿主场景. 未配置文本编辑器关联时, 按符号位置打开 SVG 得到 `imagePreview.previewEditor`. 设置 `workbench.editorAssociations` 的 `"*.svg": "default"` 后, 相同请求打开文本标签并定位至符号起点. H01-H04 均通过. 本机用户设置已添加该项, 扩展安装说明同步给出配置方法.
+
+开发顺序为扩展启动骨架、文件标记、源码位置解析、大纲适配和宿主验证。使用独立的 `vscode-extension/package.json`、`tsconfig.json` 和调试配置，入口 `extension.ts` 只负责装配，业务类继续一类一文件。清单用 `onStartupFinished` 激活，让 Explorer 在打开 SVG 之前也能获得标记提供器。注册句柄统一加入 `context.subscriptions`。[扩展结构](https://code.visualstudio.com/api/get-started/extension-anatomy)及[激活事件](https://code.visualstudio.com/api/references/activation-events)
+
+`SvgOutlineParser` 接收当前文档文本，使用 saxes 构造带起止偏移的 `SvgOutlineNode`，支持任意 SVG 元素及嵌套。节点字段由类封装，VS Code 适配层用 `document.positionAt` 转成位置。固定用例覆盖 CRLF、中文、emoji、自闭合标签及属性值包含 `>` 的情况。`SvgDocumentSymbolProvider` 将这些节点转换为原生大纲，解析失败返回空列表。先实现可在 Extension Development Host 中运行的版本，再打包 VSIX。
+
 独立目录 `vscode-extension/`。先用现有 VS Code 打开 SVG 源文本，观察原生 Outline 的嵌套、定位和实时更新，并确认 Explorer 的装饰设置。扩展激活时注册两个类实例，并将注册句柄纳入扩展生命周期。VS Code 决定何时回调、渲染徽标和大纲，以及如何根据区间定位。插件负责识别 SVG 文件、解析文本和构造符号。[VS Code API](https://code.visualstudio.com/api/references/vscode-api)
 
 - `SvgFileDecorationProvider` 通过文件 URI 后缀和 VS Code 文件类型判断，只为 `.svg` 文件返回 `[]` 装饰，关闭向父目录传播。真实宿主验证徽标显示、`.svg` 同名后缀目录无标记，以及文件名和内容一致。文件装饰在视图上叠加元数据，和经典 Decorator 都能叠加行为或表现。经典 Decorator 通常包装同接口对象，这里由宿主合成装饰；提供器把文件资源的判断结果转成宿主 `FileDecoration`，也承担 Adapter 的接口转换角色。

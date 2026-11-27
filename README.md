@@ -8,7 +8,9 @@
 
 本轮先完成 CLI 的 `ShapeProvider`、`Command`、`TreeDecorator`、`AttributeHandler`。默认装配通过注册表加载一期命令和六种图形。可选扩展可由代码调用 `ExtensionRegistry.activate` 注册，激活失败时整批撤销暂存注册。属性扩展通过受限事务写入，多次写入合并成一次撤销。
 
-VS Code 扩展、配置装配，以及 `stats`、`dir`、`box` 和树标签仍属于后续实施节点。
+VS Code 扩展已实现 `[]` 文件标记和原生 SVG Outline, 当前版本为 `course271.svg-course-tools@0.0.2`. 完整类型检查、9 项固定测试和 4 项真实宿主场景通过. 安装、F5 调试和模式分析见 [扩展 README](vscode-extension/README.md). SVG 源码导航需要在 `workbench.editorAssociations` 中设置 `"*.svg": "default"`, 当前用户的 VS Code 已完成该配置. 实机界面观察和截图受 Computer-Use 工具权限阻挡, 尚待完成. 配置装配以及 `stats`、`dir`、`box` 和树标签属于后续实施节点.
+
+VS Code 扩展的开发顺序为独立启动骨架、SVG 文件标记、带源码位置的 XML 解析、原生 Outline 接入和宿主验证。具体模块及复用取舍见 [VS Code 扩展计划](doc/README.md#vs-code-扩展计划)。
 
 [四个扩展点清单](doc/README.md#四个扩展点) · [二期设计与 PlantUML 依赖图](doc/README.md#二期设计方案) · [二期任务书](phase_cli_2.md)
 
