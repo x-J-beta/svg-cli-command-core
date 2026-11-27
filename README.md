@@ -8,7 +8,7 @@
 
 CLI 已实现四个扩展点、清单校验和事务注册, 并接入 `stats`、`dir`、`box`、`modified-star` 和 `(box)` 标签. `box` 支持嵌套、移动、缩放、属性传播、撤销重做、SVG 读回及必要子部件保护. 未启用可选插件时提供一期全部能力.
 
-VS Code 扩展已实现 `[]` 文件标记和原生 SVG Outline, 当前版本为 `course271.svg-course-tools@0.0.2`. 完整类型检查、9 项固定测试和 4 项真实宿主场景通过. 安装、F5 调试和模式分析见 [扩展 README](vscode-extension/README.md). SVG 源码导航需要在 `workbench.editorAssociations` 中设置 `"*.svg": "default"`, 当前用户的 VS Code 已完成该配置. 实机界面观察和两张截图受 Computer-Use 工具权限阻挡, 尚待完成.
+VS Code 扩展已实现 `[]` 文件标记和原生 SVG Outline, 当前版本为 `course271.svg-course-tools@0.0.2`. 完整类型检查、9 项固定测试和 4 项真实宿主场景通过. 安装、F5 调试和模式分析见 [扩展 README](vscode-extension/README.md). SVG 源码导航需要在 `workbench.editorAssociations` 中设置 `"*.svg": "default"`, 当前用户的 VS Code 已完成该配置. 用户提供的两张[实机截图](doc/README.md#vs-code-实机截图)已保存, 分别展示叶子和容器的源码定位. Explorer 文件标记及非 SVG 文件和目录的对照截图仍待补充.
 
 VS Code 扩展的开发顺序为独立启动骨架、SVG 文件标记、带源码位置的 XML 解析、原生 Outline 接入和宿主验证。具体模块及复用取舍见 [VS Code 扩展计划](doc/README.md#vs-code-扩展计划)。
 

@@ -376,7 +376,7 @@ end note
 
 2026-11-27 已实现并安装 `vscode-extension/` 0.0.2, 包含 `[]` 文件标记、原生 Outline、源码区间和状态命令. `@types/vscode@1.85.0` 已经用户明确批准安装, 完整 TypeScript 编译通过. saxes 和 xmlchars 安装于扩展工作区并随 VSIX 打包. 当前通过 9 项固定测试和真实 VS Code 宿主的 H01-H03 场景, 已安装 VSIX 的运行代码也通过同样场景. CLI 的 128 项回归测试通过. [扩展 README](../vscode-extension/README.md) 包含安装、运行、测试、模式分析、复用评估和 AI 建议修正记录.
 
-验收证据状态如下. 文件标记的筛选和生命周期由替身测试验证. 原生符号层级、无 id 元素、源码选择区间、未保存编辑和不完整 XML 恢复通过真实宿主 API 测试. 用户批准了 Computer-Use 观察和截图, 但工具访问 VS Code 返回 `Computer Use was not approved to use code`. 原生 Outline 的界面观察、实际点击和两张截图尚待完成, 当前没有生成截图文件.
+验收证据状态如下. 文件标记的筛选和生命周期由替身测试验证. 原生符号层级、无 id 元素、源码选择区间、未保存编辑和不完整 XML 恢复通过真实宿主 API 测试. 工具访问 VS Code 曾返回 `Computer Use was not approved to use code`; 用户随后提供两张实机截图, 已保存到 docs/images, 证明原生 Outline 的层级和源码定位. 截图中的文件标签有 `[]` 标记, Explorer 文件列表及非 SVG 文件和目录的对照画面仍待补充.
 
 源码导航补充. 用户反馈点击 `rect#start` 打开渲染视图后, 新增 H04 真实宿主场景. 未配置文本编辑器关联时, 按符号位置打开 SVG 得到 `imagePreview.previewEditor`. 设置 `workbench.editorAssociations` 的 `"*.svg": "default"` 后, 相同请求打开文本标签并定位至符号起点. H01-H04 均通过. 本机用户设置已添加该项, 扩展安装说明同步给出配置方法.
 
@@ -513,4 +513,16 @@ npm run metrics -- final p2 docs/metrics/p2
 
 当前 CLI 的 156 项测试通过, 包括一期回归、四个扩展点、加载器 L01-L10、命令插件 C01-C05、box B01-B07、树标签 T01-T03 和三组双装配会话. VS Code 扩展已有 9 项固定测试和 H01-H04 宿主测试通过的记录.
 
-源码实现、配置装配、正式插件、固定会话、历史兼容性和 OCP 差异证据均已完成. 两张 VS Code 实机截图仍受工具权限阻挡. 用户已批准本轮本地 Git 操作, 最终 p2 标签按需求保留到截图等交付物齐备的最终提交, 创建后不移动. 远程推送单独确认.
+源码实现、配置装配、正式插件、固定会话、历史兼容性和 OCP 差异证据均已完成. 已收到两张 VS Code Outline 实机截图, Explorer 文件标记对照截图仍待补充. 用户已批准本轮本地 Git 操作、远程推送及仓库公开, 最终 p2 标签按需求保留到交付物齐备的最终提交, 创建后不移动.
+
+### VS Code 实机截图
+
+2026-11-27 用户提供原始 PNG, 以原图保存.
+
+![Outline 选择 rect#process 并定位第 9 行](../docs/images/vscode-svg-outline-leaf.png)
+
+上图显示根 svg、嵌套 g 及叶子层级, `rect#process` 被选中, 对应源码第 9 行高亮.
+
+![Outline 选择 g#node1 并定位第 4 行](../docs/images/vscode-svg-outline-group.png)
+
+上图显示 `g#node1` 被选中, 对应源码第 4 行高亮. 两图中文件标签右侧均可见 `[]`; 左侧工作区文件树折叠, 因而尚未展示 Explorer 中文件及目录的标记对照.
