@@ -4,6 +4,7 @@ export type { Command } from "./Command.js";
 export type { CommandSession } from "./CommandSession.js";
 export type { Plugin } from "./Plugin.js";
 export type { PluginContext } from "./PluginContext.js";
+export type { PluginManifest } from "./PluginManifest.js";
 export type { ShapeView } from "./ShapeView.js";
 export type { TreeDecorator } from "./TreeDecorator.js";
 export type { TreeRow } from "./TreeRow.js";

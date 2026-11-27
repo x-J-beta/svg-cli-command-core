@@ -4,6 +4,7 @@ import type { AttributeHandler } from "./AttributeHandler.js";
 import type { Command } from "./Command.js";
 import type { Plugin } from "./Plugin.js";
 import type { TreeDecorator } from "./TreeDecorator.js";
+import type { PluginManifest } from "./PluginManifest.js";
 
 export class ExtensionRegistry {
   readonly #shapes = new Map<string, ShapeProvider>();
@@ -19,7 +20,7 @@ export class ExtensionRegistry {
   command(name: string): Command | undefined { return this.#commands.get(name); }
   shape(name: string): ShapeProvider | undefined { return this.#shapes.get(name); }
 
-  activate(plugin: Plugin, options?: unknown): void {
+  activate(plugin: Plugin, options?: unknown, manifest?: PluginManifest): void {
     if (this.#activating) throw new Error("plugin activation is already in progress");
     const shapes = new Map<string, ShapeProvider>();
     const commands = new Map<string, Command>();
@@ -62,6 +63,17 @@ export class ExtensionRegistry {
         throw new Error("plugin activation must complete synchronously");
       }
       if (registrationFailure) throw registrationFailure.cause;
+      if (manifest) {
+        const declared = manifest.contributes ?? {};
+        const registered = { shapes: [...shapes.keys()], commands: [...commands.keys()],
+          decorators: [...decorators.keys()], attributes: [...attributes.keys()] };
+        const categories = ["shapes", "commands", "decorators", "attributes"] as const;
+        const expected = Object.fromEntries(categories.map((category) => [category, [...(declared[category] ?? [])].sort()]));
+        const actual = Object.fromEntries(categories.map((category) => [category, registered[category].sort()]));
+        if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+          throw new Error(`plugin manifest mismatch: ${manifest.name} (declared: ${JSON.stringify(expected)}, registered: ${JSON.stringify(actual)})`);
+        }
+      }
       for (const [name, entry] of shapes) this.#shapes.set(name, entry);
       for (const [name, entry] of commands) this.#commands.set(name, entry);
       for (const [name, entry] of decorators) this.#decorators.set(name, entry);

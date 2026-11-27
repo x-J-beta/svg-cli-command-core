@@ -11,6 +11,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
+    "metrics": "node tools/MetricsReport.mjs",
     "pretest": "npm run build",
     "test": "node --test",
     "pretest:fixed": "npm run build",
