@@ -13,7 +13,7 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "metrics": "node tools/MetricsReport.mjs",
     "pretest": "npm run build",
-    "test": "node --test",
+    "test": "node --test tests",
     "pretest:fixed": "npm run build",
     "test:fixed": "node --test tests/fixed-cases.test.mjs tests/move-scale.test.mjs",
     "precli": "npm run build",

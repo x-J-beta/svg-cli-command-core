@@ -7,3 +7,4 @@ coverage/
 submission-access/
 .tools/npm-cache/
 .tools/vscode-baseline/
+.tools/box-code-demo/
