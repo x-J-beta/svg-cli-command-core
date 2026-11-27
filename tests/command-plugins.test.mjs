@@ -27,7 +27,7 @@ function editor(directory) {
   assembly.extensions.activate(new StatsPlugin());
   const session = assembly.createSession(new FixedSvgRepository(assembly.factory));
   const tokenizer = new Tokenizer();
-  return { session, run: (line) => assembly.dispatcher.execute(tokenizer.tokenize(line), session) };
+  return { assembly, session, run: (line) => assembly.dispatcher.execute(tokenizer.tokenize(line), session) };
 }
 
 test("C01 dir sorts directories first and includes hidden entries with stable ordering", async () => {
@@ -52,7 +52,12 @@ test("C02 dir handles empty directories, failures and invalid arguments", async 
 
 test("C03 dir works before init and success or failure preserves document, dirty state and history", async () => {
   const directory = new DirectoryFixture([]);
-  const { session, run } = editor(directory);
+  const { assembly, session, run } = editor(directory);
+  assembly.extensions.activate(new class {
+    activate(context) { context.registerDecorator(new class {
+      name = "dirty-fixture"; decorate(row) { return row.changedSinceBaseline ? "*" : undefined; }
+    }); }
+  });
   const cwd = process.cwd();
   assert.deepEqual(await run("dir"), ["(empty directory)"]);
   await run("init");

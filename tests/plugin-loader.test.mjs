@@ -112,3 +112,35 @@ test("L08 package-name resolution follows config-local node_modules", async (t) 
   assert.deepEqual(errors, []);
   assert.ok(assembly.extensions.command("echo"));
 });
+
+test("L09 manifest failure rolls back every extension category, freeing all names for a later plugin", async (t) => {
+  const { errors, plugin, load, assembly } = await fixture(t);
+  const body = `export default new class { activate(ctx) {
+    ctx.registerShape(new class { name="fixture"; create() {} fromSvg() {} });
+    ctx.registerAttribute(new class { name="fixture"; handles() { return false; } apply() {} });
+    ctx.registerDecorator(new class { name="fixture"; decorate() {} });
+    ctx.registerCommand(new class { name="fixture"; syntax="fixture"; execute() { return []; } });
+  }};`;
+  await plugin("invalid", body, {});
+  await plugin("valid", body, { shapes: ["fixture"], commands: ["fixture"], decorators: ["fixture"], attributes: ["fixture"] });
+  await load([{ module: "./invalid" }, { module: "./valid" }]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /^error: plugin manifest mismatch: invalid /);
+  assert.ok(assembly.extensions.shape("fixture"));
+  assert.ok(assembly.extensions.command("fixture"));
+  assert.equal(assembly.extensions.attributes.length, 1);
+  assert.equal(assembly.extensions.decorators.length, 1);
+});
+
+test("L10 package resolution supports import-only exports without using a require-condition fallback", async (t) => {
+  const { directory, errors, load, assembly } = await fixture(t);
+  const folder = join(directory, "node_modules", "import-only");
+  await mkdir(folder, { recursive: true });
+  await writeFile(join(folder, "package.json"), JSON.stringify({
+    name: "import-only", type: "module", exports: { import: "./index.js" }, contributes: { commands: ["echo"] },
+  }));
+  await writeFile(join(folder, "index.js"), echo("echo"));
+  await load([{ module: "import-only" }]);
+  assert.deepEqual(errors, []);
+  assert.ok(assembly.extensions.command("echo"));
+});

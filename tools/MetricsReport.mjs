@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path";
 
 class MetricsReport {
   #ts;
-  #root = resolve(import.meta.dirname ?? dirname(new URL(import.meta.url).pathname), "..");
+  #root;
 
   constructor() {
     this.#root = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
@@ -50,13 +50,29 @@ class MetricsReport {
         : path.startsWith("src/plugins/") ? "plugins"
         : /^(src\/host\/|src\/cli\/|src\/infrastructure\/|src\/main\.ts|src\/index\.ts)/u.test(path) ? "assembly" : "kernel";
       const title = source.statements.find((node) => ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node));
-      return { path, category, responsibility: title?.name?.text ?? "module exports / entry point",
+      const name = title?.name?.text ?? "module";
+      const responsibility = path.endsWith("/index.ts") || path === "src/index.ts" ? "Expose the public module API"
+        : path.startsWith("src/host/") ? "Compose or load runtime dependencies and plugin instances"
+        : /CliCommand$/u.test(name) ? "Validate CLI arguments and invoke the corresponding use case"
+        : /Command$/u.test(name) ? "Execute a command and enforce its edit or query contract"
+        : /Provider$/u.test(name) ? "Create or restore shapes through the provider contract"
+        : /Handler$/u.test(name) ? "Apply domain attribute behavior through the edit transaction"
+        : /Decorator$/u.test(name) ? "Supply optional tree-line tags"
+        : /Plugin$/u.test(name) ? "Register the package contributions"
+        : path.startsWith("src/application/plugins/") ? "Define plugin contracts or read-only application views"
+        : path.startsWith("src/domain/") ? "Encapsulate shape, geometry, containment or document invariants"
+        : path.startsWith("src/infrastructure/") ? "Adapt XML or file storage to the application"
+        : path.startsWith("src/plugins/") ? "Implement the package domain behavior or filesystem port"
+        : path.startsWith("vscode-extension/") ? "Provide SVG outline or decoration behavior to VS Code"
+        : path.startsWith("src/cli/") ? "Adapt terminal input or output"
+        : "Coordinate editor state, command history or presentation";
+      return { path, category, responsibility: `${name}: ${responsibility}`,
         lines: text.trimEnd().split("\n").length, complexity };
     }) };
   }
 
   run(args) {
-    const [base = "final", target = "HEAD", output = "docs/metrics"] = args;
+    const [base = "final", target = "HEAD", output = "docs/metrics", label = target] = args;
     const before = this.measure(base);
     const after = this.measure(target);
     const categories = ["kernel", "assembly", "plugins", "vscode"];
@@ -70,11 +86,14 @@ class MetricsReport {
     });
     const directory = resolve(this.#root, output);
     mkdirSync(directory, { recursive: true });
-    writeFileSync(join(directory, "report.json"), JSON.stringify({ base, target, baseCommit: before.commit,
-      targetCommit: after.commit, method: "Physical non-trailing lines; AST function bases + branch/loop/catch/short-circuit decisions; VS Code excluded from CLI totals.",
+    writeFileSync(join(directory, "report.json"), JSON.stringify({ base, target: label, baseCommit: before.commit,
+      baseSourceTree: this.git(["rev-parse", `${before.commit}:src`]).trim(),
+      targetSourceTree: this.git(["rev-parse", `${after.commit}:src`]).trim(),
+      method: "Physical non-trailing lines; AST function bases + branch/loop/catch/short-circuit decisions; VS Code excluded from CLI totals.",
       summary, files: after.files }, null, 2) + "\n");
     writeFileSync(join(directory, "files.csv"), "category,path,responsibility,lines,complexity\n" +
-      after.files.map((file) => [file.category, file.path, file.responsibility, file.lines, file.complexity].join(",")).join("\n") + "\n");
+      after.files.map((file) => [file.category, file.path, file.responsibility, file.lines, file.complexity]
+        .map((value) => '"' + String(value).replace(/"/gu, '""') + '"').join(",")).join("\n") + "\n");
     console.log(JSON.stringify({ baseCommit: before.commit, targetCommit: after.commit, summary }, null, 2));
   }
 }

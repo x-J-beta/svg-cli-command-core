@@ -5,12 +5,14 @@ import { pathToFileURL } from "node:url";
 import type { Plugin } from "../application/plugins/Plugin.js";
 import type { PluginManifest } from "../application/plugins/PluginManifest.js";
 import type { PluginInstaller } from "./PluginInstaller.js";
+import { ModuleResolver } from "./ModuleResolver.js";
 
 interface PluginEntry { module: string; enabled?: boolean; options?: unknown; }
 
 export class PluginLoader {
   readonly #installer: PluginInstaller;
   readonly #report: (message: string) => void;
+  readonly #resolver = new ModuleResolver();
   constructor(installer: PluginInstaller, report: (message: string) => void) {
     this.#installer = installer; this.#report = report;
   }
@@ -57,12 +59,12 @@ export class PluginLoader {
         const manifest = await this.manifest(manifestPath);
         entryPath = require.resolve(resolve(candidate, manifest.main ?? "index.js"));
       } else {
-        entryPath = require.resolve(candidate);
+        entryPath = await this.#resolver.resolve(isAbsolute(candidate) ? pathToFileURL(candidate).href : candidate, configPath);
         manifestPath = await this.findManifest(dirname(entryPath));
       }
     } catch (failure) {
       const code = (failure as NodeJS.ErrnoException).code;
-      this.#report(code === "ENOENT" || code === "MODULE_NOT_FOUND"
+      this.#report(code === "ENOENT" || code === "MODULE_NOT_FOUND" || code === "ERR_MODULE_NOT_FOUND"
         ? `error: plugin not found: ${entry.module}`
         : `error: plugin failed to activate: ${entry.module} (${this.reason(failure)})`);
       return;

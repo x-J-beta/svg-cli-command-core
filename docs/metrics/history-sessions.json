@@ -1,0 +1,16 @@
+[
+  {
+    "ref": "final",
+    "commit": "ff44716039038c1d68bb2e6cc20b693a04bfb8b1",
+    "transcript": "cli-1",
+    "stdout": "identical",
+    "stderr": "identical"
+  },
+  {
+    "ref": "codex/box-code-demo",
+    "commit": "192f9ba43936d8694cad5d2a128f9e66c25f7d35",
+    "transcript": "cli-box",
+    "stdout": "identical",
+    "stderr": "identical"
+  }
+]

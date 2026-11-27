@@ -1,0 +1,36 @@
+svg-editor 0.1 — type 'help' for commands
+[DIR]  docs
+[FILE]  .hidden
+[FILE]  other.svg
+canvas 800x600 created
+(total 0, containers 0)
+box#n1 created (g#n1 + rect#n1-rect + text#n1-label)
+g#outer created
+circle#c1 created in g#outer
+rect: 1  text: 1  circle: 1  (total 3, containers 2)
+svg (800x600) *
+├── g#n1 (box) *
+│   ├── rect#n1-rect  x=120 y=100 w=160 h=60 fill=#4a90d9 *
+│   └── text#n1-label  (140,135) "开始" *
+└── g#outer *
+    └── circle#c1  cx=50 cy=50 r=10 *
+box#n1 label updated: "changed"
+box#n1 label restored: "开始"
+box#n1 label updated: "changed"
+saved to ../plugins-output.svg (5 elements)
+[DIR]  docs
+[FILE]  .hidden
+[FILE]  other.svg
+box#n1 fill propagated to n1-rect
+box#n1 fill restored: "#4a90d9"
+svg (800x600) *
+├── g#n1 (box) *
+│   ├── rect#n1-rect  x=120 y=100 w=160 h=60 fill=#4a90d9 *
+│   └── text#n1-label  (140,135) "changed"
+└── g#outer
+    └── circle#c1  cx=50 cy=50 r=10
+read ../plugins-output.svg (5 elements)
+[DIR]  docs
+[FILE]  .hidden
+[FILE]  other.svg
+rect: 1  text: 1  circle: 1  (total 3, containers 2)

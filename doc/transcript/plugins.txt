@@ -1,0 +1,21 @@
+# dir is usable before init and after read/save; saved output stays outside cwd.
+dir
+init 800 600
+stats
+create box n1 120 100 160 60 "开始"
+create g outer
+create circle c1 50 50 10 in outer
+stats
+tree
+set n1 label "changed"
+undo
+redo
+save ../plugins-output.svg
+dir
+set n1 fill red
+undo
+tree
+read ../plugins-output.svg
+dir
+stats
+exit

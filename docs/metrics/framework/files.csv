@@ -1,95 +1,95 @@
 category,path,responsibility,lines,complexity
-kernel,src/application/CommandContext.ts,CommandContext,7,1
-kernel,src/application/CommandDispatcher.ts,CommandDispatcher,20,7
-kernel,src/application/CommandHistory.ts,CommandHistory,64,13
-kernel,src/application/DocumentChanges.ts,DocumentChanges,25,11
-kernel,src/application/DocumentPresenter.ts,DocumentPresenter,66,26
-kernel,src/application/EditResult.ts,EditResult,22,4
-kernel,src/application/EditorSession.ts,EditorSession,119,34
-kernel,src/application/SvgReadResult.ts,SvgReadResult,9,1
-kernel,src/application/SvgRepository.ts,SvgRepository,7,0
-kernel,src/application/cliCommands/CommandArguments.ts,CommandArguments,21,11
-kernel,src/application/commands/AddToCommand.ts,AddToCommand,35,6
-kernel,src/application/commands/CommandBatch.ts,CommandBatch,46,12
-kernel,src/application/commands/CreateCommand.ts,CreateCommand,37,5
-kernel,src/application/commands/DeleteCommand.ts,DeleteCommand,20,3
-kernel,src/application/commands/GeometryCommandBatch.ts,GeometryCommandBatch,13,4
-kernel,src/application/commands/GroupCommand.ts,GroupCommand,39,14
-kernel,src/application/commands/HandledAttributeCommand.ts,HandledAttributeCommand,77,26
-kernel,src/application/commands/MoveCommand.ts,MoveCommand,20,5
-kernel,src/application/commands/ReversibleCommand.ts,ReversibleCommand,9,0
-kernel,src/application/commands/ScaleCommand.ts,ScaleCommand,21,5
-kernel,src/application/commands/SetPropertyCommand.ts,SetPropertyCommand,29,4
-kernel,src/application/commands/UngroupCommand.ts,UngroupCommand,25,7
-kernel,src/application/plugins/AttributeHandler.ts,AttributeHandler,9,0
-kernel,src/application/plugins/AttributeTransaction.ts,AttributeTransaction,4,0
-kernel,src/application/plugins/Command.ts,Command,8,0
-kernel,src/application/plugins/CommandSession.ts,CommandSession,24,0
-kernel,src/application/plugins/ExtensionRegistry.ts,ExtensionRegistry,86,40
-kernel,src/application/plugins/Plugin.ts,Plugin,5,0
-kernel,src/application/plugins/PluginContext.ts,PluginContext,14,0
-kernel,src/application/plugins/PluginManifest.ts,PluginManifest,9,0
-kernel,src/application/plugins/ShapeView.ts,ShapeView,16,9
-kernel,src/application/plugins/TreeDecorator.ts,TreeDecorator,6,0
-kernel,src/application/plugins/TreeRow.ts,TreeRow,7,0
-kernel,src/application/plugins/index.ts,module exports / entry point,21,0
-assembly,src/cli/CliRepl.ts,CliRepl,29,7
-assembly,src/cli/ConsolePresenter.ts,ConsolePresenter,12,5
-assembly,src/cli/Tokenizer.ts,Tokenizer,21,13
-kernel,src/domain/ContainerShape.ts,ContainerShape,20,6
-kernel,src/domain/GeometricShape.ts,GeometricShape,34,12
-kernel,src/domain/GeometryTarget.ts,GeometryTarget,7,0
-kernel,src/domain/Placement.ts,Placement,6,0
-kernel,src/domain/PropertyDefinition.ts,PropertyDefinition,10,0
-kernel,src/domain/PropertyValue.ts,module exports / entry point,1,0
-kernel,src/domain/Shape.ts,Shape,88,40
-kernel,src/domain/ShapeContainer.ts,ShapeContainer,48,21
-kernel,src/domain/ShapeFactory.ts,ShapeFactory,53,23
-kernel,src/domain/ShapeProperties.ts,ShapeProperties,13,6
-kernel,src/domain/ShapeProvider.ts,ShapeProvider,11,0
-kernel,src/domain/SvgDocument.ts,SvgDocument,162,65
-kernel,src/domain/SvgShapeInput.ts,SvgShapeInput,10,0
-kernel,src/domain/TemporaryContainer.ts,TemporaryContainer,4,0
-assembly,src/host/CliAssembly.ts,CliAssembly,23,4
-assembly,src/host/CliStartup.ts,CliStartup,18,7
-assembly,src/host/CodePlugins.ts,CodePlugins,7,1
-assembly,src/host/PluginInstaller.ts,PluginInstaller,21,5
-assembly,src/host/PluginLoader.ts,PluginEntry,96,49
-assembly,src/index.ts,module exports / entry point,25,0
-assembly,src/infrastructure/svg/FileSvgRepository.ts,FileSvgRepository,34,7
-assembly,src/infrastructure/svg/SvgElement.ts,SvgElement,20,9
-assembly,src/infrastructure/svg/SvgReader.ts,SvgReader,89,41
-assembly,src/infrastructure/svg/SvgWriter.ts,SvgWriter,40,18
-assembly,src/main.ts,module exports / entry point,3,0
-plugins,src/plugins/builtin/BuiltinCommands.ts,BuiltinCommands,36,3
-plugins,src/plugins/builtin/BuiltinShapeProvider.ts,BuiltinShapeProvider,45,19
-plugins,src/plugins/builtin/BuiltinShapes.ts,BuiltinShapes,20,1
-plugins,src/plugins/builtin/commands/AddToCliCommand.ts,AddToCliCommand,14,2
-plugins,src/plugins/builtin/commands/CanvasCliCommand.ts,CanvasCliCommand,12,2
-plugins,src/plugins/builtin/commands/CreateCliCommand.ts,CreateCliCommand,19,3
-plugins,src/plugins/builtin/commands/DeleteCliCommand.ts,DeleteCliCommand,12,1
-plugins,src/plugins/builtin/commands/ExitCliCommand.ts,ExitCliCommand,11,1
-plugins,src/plugins/builtin/commands/GroupCliCommand.ts,GroupCliCommand,13,2
-plugins,src/plugins/builtin/commands/HelpCliCommand.ts,HelpCliCommand,10,2
-plugins,src/plugins/builtin/commands/HistoryCliCommand.ts,HistoryCliCommand,13,3
-plugins,src/plugins/builtin/commands/InitCliCommand.ts,InitCliCommand,12,3
-plugins,src/plugins/builtin/commands/MoveCliCommand.ts,MoveCliCommand,13,1
-plugins,src/plugins/builtin/commands/OrderCliCommand.ts,OrderCliCommand,17,3
-plugins,src/plugins/builtin/commands/ReadCliCommand.ts,ReadCliCommand,11,1
-plugins,src/plugins/builtin/commands/SaveCliCommand.ts,SaveCliCommand,11,1
-plugins,src/plugins/builtin/commands/ScaleCliCommand.ts,ScaleCliCommand,13,1
-plugins,src/plugins/builtin/commands/SetCliCommand.ts,SetCliCommand,12,1
-plugins,src/plugins/builtin/commands/ShowCliCommand.ts,ShowCliCommand,11,1
-plugins,src/plugins/builtin/commands/TreeCliCommand.ts,TreeCliCommand,11,1
-plugins,src/plugins/builtin/commands/UngroupCliCommand.ts,UngroupCliCommand,12,1
-plugins,src/plugins/builtin/shapes/Circle.ts,Circle,12,5
-plugins,src/plugins/builtin/shapes/Ellipse.ts,Ellipse,15,5
-plugins,src/plugins/builtin/shapes/Group.ts,Group,6,2
-plugins,src/plugins/builtin/shapes/Line.ts,Line,15,8
-plugins,src/plugins/builtin/shapes/Rect.ts,Rect,20,6
-plugins,src/plugins/builtin/shapes/Text.ts,Text,23,11
-vscode,vscode-extension/src/SvgDocumentSymbolProvider.ts,SvgDocumentSymbolProvider,28,7
-vscode,vscode-extension/src/SvgFileDecorationProvider.ts,SvgFileDecorationProvider,35,12
-vscode,vscode-extension/src/SvgOutlineNode.ts,SvgOutlineNode,28,10
-vscode,vscode-extension/src/SvgOutlineParser.ts,SvgOutlineParser,32,12
-vscode,vscode-extension/src/extension.ts,module exports / entry point,14,2
+"kernel","src/application/CommandContext.ts","CommandContext: Coordinate editor state, command history or presentation","7","1"
+"kernel","src/application/CommandDispatcher.ts","CommandDispatcher: Coordinate editor state, command history or presentation","20","7"
+"kernel","src/application/CommandHistory.ts","CommandHistory: Coordinate editor state, command history or presentation","64","13"
+"kernel","src/application/DocumentChanges.ts","DocumentChanges: Coordinate editor state, command history or presentation","25","11"
+"kernel","src/application/DocumentPresenter.ts","DocumentPresenter: Coordinate editor state, command history or presentation","66","26"
+"kernel","src/application/EditResult.ts","EditResult: Coordinate editor state, command history or presentation","22","4"
+"kernel","src/application/EditorSession.ts","EditorSession: Coordinate editor state, command history or presentation","119","34"
+"kernel","src/application/SvgReadResult.ts","SvgReadResult: Coordinate editor state, command history or presentation","9","1"
+"kernel","src/application/SvgRepository.ts","SvgRepository: Coordinate editor state, command history or presentation","7","0"
+"kernel","src/application/cliCommands/CommandArguments.ts","CommandArguments: Coordinate editor state, command history or presentation","21","11"
+"kernel","src/application/commands/AddToCommand.ts","AddToCommand: Execute a command and enforce its edit or query contract","35","6"
+"kernel","src/application/commands/CommandBatch.ts","CommandBatch: Coordinate editor state, command history or presentation","46","12"
+"kernel","src/application/commands/CreateCommand.ts","CreateCommand: Execute a command and enforce its edit or query contract","37","5"
+"kernel","src/application/commands/DeleteCommand.ts","DeleteCommand: Execute a command and enforce its edit or query contract","20","3"
+"kernel","src/application/commands/GeometryCommandBatch.ts","GeometryCommandBatch: Coordinate editor state, command history or presentation","13","4"
+"kernel","src/application/commands/GroupCommand.ts","GroupCommand: Execute a command and enforce its edit or query contract","39","14"
+"kernel","src/application/commands/HandledAttributeCommand.ts","HandledAttributeCommand: Execute a command and enforce its edit or query contract","77","26"
+"kernel","src/application/commands/MoveCommand.ts","MoveCommand: Execute a command and enforce its edit or query contract","20","5"
+"kernel","src/application/commands/ReversibleCommand.ts","ReversibleCommand: Execute a command and enforce its edit or query contract","9","0"
+"kernel","src/application/commands/ScaleCommand.ts","ScaleCommand: Execute a command and enforce its edit or query contract","21","5"
+"kernel","src/application/commands/SetPropertyCommand.ts","SetPropertyCommand: Execute a command and enforce its edit or query contract","29","4"
+"kernel","src/application/commands/UngroupCommand.ts","UngroupCommand: Execute a command and enforce its edit or query contract","25","7"
+"kernel","src/application/plugins/AttributeHandler.ts","AttributeHandler: Apply domain attribute behavior through the edit transaction","9","0"
+"kernel","src/application/plugins/AttributeTransaction.ts","AttributeTransaction: Define plugin contracts or read-only application views","4","0"
+"kernel","src/application/plugins/Command.ts","Command: Execute a command and enforce its edit or query contract","8","0"
+"kernel","src/application/plugins/CommandSession.ts","CommandSession: Define plugin contracts or read-only application views","24","0"
+"kernel","src/application/plugins/ExtensionRegistry.ts","ExtensionRegistry: Define plugin contracts or read-only application views","86","40"
+"kernel","src/application/plugins/Plugin.ts","Plugin: Register the package contributions","5","0"
+"kernel","src/application/plugins/PluginContext.ts","PluginContext: Define plugin contracts or read-only application views","14","0"
+"kernel","src/application/plugins/PluginManifest.ts","PluginManifest: Define plugin contracts or read-only application views","9","0"
+"kernel","src/application/plugins/ShapeView.ts","ShapeView: Define plugin contracts or read-only application views","16","9"
+"kernel","src/application/plugins/TreeDecorator.ts","TreeDecorator: Supply optional tree-line tags","6","0"
+"kernel","src/application/plugins/TreeRow.ts","TreeRow: Define plugin contracts or read-only application views","7","0"
+"kernel","src/application/plugins/index.ts","module: Expose the public module API","21","0"
+"assembly","src/cli/CliRepl.ts","CliRepl: Adapt terminal input or output","29","7"
+"assembly","src/cli/ConsolePresenter.ts","ConsolePresenter: Adapt terminal input or output","12","5"
+"assembly","src/cli/Tokenizer.ts","Tokenizer: Adapt terminal input or output","21","13"
+"kernel","src/domain/ContainerShape.ts","ContainerShape: Encapsulate shape, geometry, containment or document invariants","20","6"
+"kernel","src/domain/GeometricShape.ts","GeometricShape: Encapsulate shape, geometry, containment or document invariants","34","12"
+"kernel","src/domain/GeometryTarget.ts","GeometryTarget: Encapsulate shape, geometry, containment or document invariants","7","0"
+"kernel","src/domain/Placement.ts","Placement: Encapsulate shape, geometry, containment or document invariants","6","0"
+"kernel","src/domain/PropertyDefinition.ts","PropertyDefinition: Encapsulate shape, geometry, containment or document invariants","10","0"
+"kernel","src/domain/PropertyValue.ts","module: Encapsulate shape, geometry, containment or document invariants","1","0"
+"kernel","src/domain/Shape.ts","Shape: Encapsulate shape, geometry, containment or document invariants","88","40"
+"kernel","src/domain/ShapeContainer.ts","ShapeContainer: Encapsulate shape, geometry, containment or document invariants","48","21"
+"kernel","src/domain/ShapeFactory.ts","ShapeFactory: Encapsulate shape, geometry, containment or document invariants","53","23"
+"kernel","src/domain/ShapeProperties.ts","ShapeProperties: Encapsulate shape, geometry, containment or document invariants","13","6"
+"kernel","src/domain/ShapeProvider.ts","ShapeProvider: Create or restore shapes through the provider contract","11","0"
+"kernel","src/domain/SvgDocument.ts","SvgDocument: Encapsulate shape, geometry, containment or document invariants","162","65"
+"kernel","src/domain/SvgShapeInput.ts","SvgShapeInput: Encapsulate shape, geometry, containment or document invariants","10","0"
+"kernel","src/domain/TemporaryContainer.ts","TemporaryContainer: Encapsulate shape, geometry, containment or document invariants","4","0"
+"assembly","src/host/CliAssembly.ts","CliAssembly: Compose or load runtime dependencies and plugin instances","23","4"
+"assembly","src/host/CliStartup.ts","CliStartup: Compose or load runtime dependencies and plugin instances","18","7"
+"assembly","src/host/CodePlugins.ts","CodePlugins: Compose or load runtime dependencies and plugin instances","7","1"
+"assembly","src/host/PluginInstaller.ts","PluginInstaller: Compose or load runtime dependencies and plugin instances","21","5"
+"assembly","src/host/PluginLoader.ts","PluginEntry: Compose or load runtime dependencies and plugin instances","96","49"
+"assembly","src/index.ts","module: Expose the public module API","25","0"
+"assembly","src/infrastructure/svg/FileSvgRepository.ts","FileSvgRepository: Adapt XML or file storage to the application","34","7"
+"assembly","src/infrastructure/svg/SvgElement.ts","SvgElement: Adapt XML or file storage to the application","20","9"
+"assembly","src/infrastructure/svg/SvgReader.ts","SvgReader: Adapt XML or file storage to the application","89","41"
+"assembly","src/infrastructure/svg/SvgWriter.ts","SvgWriter: Adapt XML or file storage to the application","40","18"
+"assembly","src/main.ts","module: Coordinate editor state, command history or presentation","3","0"
+"plugins","src/plugins/builtin/BuiltinCommands.ts","BuiltinCommands: Implement the package domain behavior or filesystem port","36","3"
+"plugins","src/plugins/builtin/BuiltinShapeProvider.ts","BuiltinShapeProvider: Create or restore shapes through the provider contract","45","19"
+"plugins","src/plugins/builtin/BuiltinShapes.ts","BuiltinShapes: Implement the package domain behavior or filesystem port","20","1"
+"plugins","src/plugins/builtin/commands/AddToCliCommand.ts","AddToCliCommand: Validate CLI arguments and invoke the corresponding use case","14","2"
+"plugins","src/plugins/builtin/commands/CanvasCliCommand.ts","CanvasCliCommand: Validate CLI arguments and invoke the corresponding use case","12","2"
+"plugins","src/plugins/builtin/commands/CreateCliCommand.ts","CreateCliCommand: Validate CLI arguments and invoke the corresponding use case","19","3"
+"plugins","src/plugins/builtin/commands/DeleteCliCommand.ts","DeleteCliCommand: Validate CLI arguments and invoke the corresponding use case","12","1"
+"plugins","src/plugins/builtin/commands/ExitCliCommand.ts","ExitCliCommand: Validate CLI arguments and invoke the corresponding use case","11","1"
+"plugins","src/plugins/builtin/commands/GroupCliCommand.ts","GroupCliCommand: Validate CLI arguments and invoke the corresponding use case","13","2"
+"plugins","src/plugins/builtin/commands/HelpCliCommand.ts","HelpCliCommand: Validate CLI arguments and invoke the corresponding use case","10","2"
+"plugins","src/plugins/builtin/commands/HistoryCliCommand.ts","HistoryCliCommand: Validate CLI arguments and invoke the corresponding use case","13","3"
+"plugins","src/plugins/builtin/commands/InitCliCommand.ts","InitCliCommand: Validate CLI arguments and invoke the corresponding use case","12","3"
+"plugins","src/plugins/builtin/commands/MoveCliCommand.ts","MoveCliCommand: Validate CLI arguments and invoke the corresponding use case","13","1"
+"plugins","src/plugins/builtin/commands/OrderCliCommand.ts","OrderCliCommand: Validate CLI arguments and invoke the corresponding use case","17","3"
+"plugins","src/plugins/builtin/commands/ReadCliCommand.ts","ReadCliCommand: Validate CLI arguments and invoke the corresponding use case","11","1"
+"plugins","src/plugins/builtin/commands/SaveCliCommand.ts","SaveCliCommand: Validate CLI arguments and invoke the corresponding use case","11","1"
+"plugins","src/plugins/builtin/commands/ScaleCliCommand.ts","ScaleCliCommand: Validate CLI arguments and invoke the corresponding use case","13","1"
+"plugins","src/plugins/builtin/commands/SetCliCommand.ts","SetCliCommand: Validate CLI arguments and invoke the corresponding use case","12","1"
+"plugins","src/plugins/builtin/commands/ShowCliCommand.ts","ShowCliCommand: Validate CLI arguments and invoke the corresponding use case","11","1"
+"plugins","src/plugins/builtin/commands/TreeCliCommand.ts","TreeCliCommand: Validate CLI arguments and invoke the corresponding use case","11","1"
+"plugins","src/plugins/builtin/commands/UngroupCliCommand.ts","UngroupCliCommand: Validate CLI arguments and invoke the corresponding use case","12","1"
+"plugins","src/plugins/builtin/shapes/Circle.ts","Circle: Implement the package domain behavior or filesystem port","12","5"
+"plugins","src/plugins/builtin/shapes/Ellipse.ts","Ellipse: Implement the package domain behavior or filesystem port","15","5"
+"plugins","src/plugins/builtin/shapes/Group.ts","Group: Implement the package domain behavior or filesystem port","6","2"
+"plugins","src/plugins/builtin/shapes/Line.ts","Line: Implement the package domain behavior or filesystem port","15","8"
+"plugins","src/plugins/builtin/shapes/Rect.ts","Rect: Implement the package domain behavior or filesystem port","20","6"
+"plugins","src/plugins/builtin/shapes/Text.ts","Text: Implement the package domain behavior or filesystem port","23","11"
+"vscode","vscode-extension/src/SvgDocumentSymbolProvider.ts","SvgDocumentSymbolProvider: Create or restore shapes through the provider contract","28","7"
+"vscode","vscode-extension/src/SvgFileDecorationProvider.ts","SvgFileDecorationProvider: Create or restore shapes through the provider contract","35","12"
+"vscode","vscode-extension/src/SvgOutlineNode.ts","SvgOutlineNode: Provide SVG outline or decoration behavior to VS Code","28","10"
+"vscode","vscode-extension/src/SvgOutlineParser.ts","SvgOutlineParser: Provide SVG outline or decoration behavior to VS Code","32","12"
+"vscode","vscode-extension/src/extension.ts","module: Provide SVG outline or decoration behavior to VS Code","14","2"
