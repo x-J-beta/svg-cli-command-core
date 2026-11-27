@@ -392,7 +392,7 @@ end note
 
 ### CLI 模块与依赖
 
-一期依赖见上面的 PlantUML 包图。下图展示二期 CLI 结构，其中配置加载器和可选发布包为后续节点。内核位于 `src/domain/` 和 `src/application/`，不导入内置插件、装配或 Node 文件适配器。宿主在 `src/host/` 装配终端和 SVG 读写，内置命令与六种图形位于 `src/plugins/builtin/`。`group` 由命令适配器注入标准分组工厂，核心分组操作通过 `Shape` 和容器能力工作。
+一期依赖见上面的 PlantUML 包图. 下图展示二期 CLI 结构. 内核位于 `src/domain/` 和 `src/application/`, 依赖插件接口. 宿主在 `src/host/` 装配终端和 SVG 读写, 内置命令与六种图形位于 `src/plugins/builtin/`, 正式可选插件分别位于 `src/plugins/stats/`、`dir/`、`box/` 和 `modified-star/`. `group` 由命令适配器注入标准分组工厂, 核心分组操作通过 `Shape` 和容器能力工作.
 
 ```plantuml
 @startuml
@@ -407,14 +407,14 @@ package "CLI 内核" as Core {
 }
 package "宿主与装配 src/host、src/cli、src/infrastructure" {
   [顶层装配] as Entry
-  [配置解析与插件加载器（计划）] as Loader
+  [PluginLoader / ModuleResolver / PluginInstaller] as Loader
   [终端与 SVG 文件适配] as Adapters
   Entry --> Loader
   Entry --> Adapters
 }
 package "插件 src/plugins" {
   [一期内置] as Builtins
-  [独立可选插件包（计划）] as Optional
+  [stats / dir / box / modified-star] as Optional
 }
 Entry --> Runtime
 Entry --> Builtins
@@ -428,25 +428,25 @@ Optional --> API
 @enduml
 ```
 
-图中虚线表示装配关系。代码装配由组合根静态引用插件，后续配置加载器仅认识模块说明符、清单和公共契约。新插件使用 `svg-cli-command-core/plugins` 的契约和能力。统计命令可遍历 `CommandSession.rootShapes`，复合图形可继承 `ContainerShape`，通过 `PluginContext.createShape` 创建已注册的子部件。历史栈、隐藏容器和文件写入流程继续由框架管理。
+图中虚线表示装配关系. 代码装配由 `CodePlugins` 静态引用插件, 配置加载器只读取模块说明符、清单和公共契约. 源码插件通过 `application/plugins/index.ts` 这一公开入口使用领域抽象和扩展点, 其对外包入口为 `svg-cli-command-core/plugins`. `StatsCommand` 遍历 `CommandSession.rootShapes`, `Box` 继承 `ContainerShape`, 子部件通过 `PluginContext.createShape` 创建. 历史栈、隐藏容器和文件写入流程由框架管理.
 
 ### 四个扩展点
 
 | 接口 | 职责和实际调用位置 | 本轮实现与用例 | 缺省行为与契约报错 |
 |---|---|---|---|
-| [`ShapeProvider`](../src/domain/ShapeProvider.ts) | 提供图形创建和读回。[ShapeFactory](../src/domain/ShapeFactory.ts) 的 `fromArguments` / `fromSvg` 选择 provider，[SvgReader](../src/infrastructure/svg/SvgReader.ts) 的 `parse` 通过它组装子树 | 六种 `BuiltinShapeProvider` 实例，测试 `BundleProvider`（P02–P04） | 保留六种类型。未知类型沿用一期报错。`data-kind` 无匹配或标签与 provider 声明不符时按普通标签读入。provider 返回错误身份、已挂载对象或改变子节点时拒绝 |
-| [`Command`](../src/application/plugins/Command.ts) | 名称、语法与执行。[CommandDispatcher](../src/application/CommandDispatcher.ts) 的 `execute` 查表，[CliAssembly](../src/host/CliAssembly.ts) 从同一注册表提供 `help` 内容 | 一期命令、测试 `EchoCommand`（P01、P09） | 原 `help` 内容及顺序不变。未注册命令沿用 `unknown command`。无效输出报 `invalid command output: <name>` |
-| [`TreeDecorator`](../src/application/plugins/TreeDecorator.ts) | 读取根行或节点行的只读视图和编辑标记，返回一个行尾标签。[DocumentPresenter](../src/application/DocumentPresenter.ts) 的 `decorate` 按注册顺序调用 | 测试 `RowTag` 的组合、星号和非法输出（P05–P06、P10） | 无标签时树输出逐字节不变。空白、非字符串、换行标签和异常均报 `tree decorator <name>: <reason>` |
-| [`AttributeHandler`](../src/application/plugins/AttributeHandler.ts) | [EditorSession](../src/application/EditorSession.ts) 的 `setAttribute` 匹配处理器，[HandledAttributeCommand](../src/application/commands/HandledAttributeCommand.ts) 的 `execute` 执行事务 | 测试 `PairAttribute`（P07–P09） | 无命中时沿用一期属性定义。多命中在写前报冲突。越界写入或执行失败回滚后报错 |
+| [`ShapeProvider`](../src/domain/ShapeProvider.ts) | [ShapeFactory](../src/domain/ShapeFactory.ts) 的 `fromArguments` / `fromSvg` 选择 provider, [SvgReader](../src/infrastructure/svg/SvgReader.ts) 的 `parse` 组装子树 | 六种 `BuiltinShapeProvider` 实例、`BoxShapeProvider`; P02-P04、B01-B07 | 未启用 box 时保留六种类型, box 标记降级为普通 g. 错误身份、挂载状态、子节点丢失或 box 结构损坏时拒绝 |
+| [`Command`](../src/application/plugins/Command.ts) | [CommandDispatcher](../src/application/CommandDispatcher.ts) 的 `execute` 查表, [CliAssembly](../src/host/CliAssembly.ts) 从同一注册表提供 help | 一期命令、`StatsCommand`、`DirCommand`; P01、P09、C01-C05 | 未装 stats/dir 时 help 无相应条目, 执行时报 unknown command. 无效返回值报 invalid command output |
+| [`TreeDecorator`](../src/application/plugins/TreeDecorator.ts) | [DocumentPresenter](../src/application/DocumentPresenter.ts) 的 `decorate` 按注册顺序调用, 输入为只读行事实 | `ModifiedStarDecorator`、`BoxTypeDecorator`; P05-P06、P10、T01-T03 | 无标签时树输出逐字节保持基线. 非法标签和异常报 tree decorator 错误 |
+| [`AttributeHandler`](../src/application/plugins/AttributeHandler.ts) | [EditorSession](../src/application/EditorSession.ts) 的 `setAttribute` 匹配, [HandledAttributeCommand](../src/application/commands/HandledAttributeCommand.ts) 的 `execute` 执行事务 | `BoxFillHandler`、`BoxLabelHandler`; P07-P09、B02 | 无命中时沿用一期属性规则. 多命中在写前报冲突. 越界或执行失败回滚, 两栈保持 |
 
 代码装配调用 [`ExtensionRegistry.activate`](../src/application/plugins/ExtensionRegistry.ts)，通过 `PluginContext` 暂存注册。名称重复报 `duplicate registration: <category>/<name>`，无效方法或语法报 `invalid registration`，激活抛错时整批放弃。底层组件的构造函数现在由宿主显式传入依赖，应用入口和集成测试统一使用 `CliAssembly`。
 
-### ADR 提案
+### ADR
 
 1. **属性处理与历史**。处理器提供稳定注册名，`handles(target, attr)` 只读取可见节点视图，`apply(target, attr, value, tx)` 通过同步的 `tx.set` 修改目标或子部件。两个及以上处理器命中时，在写入前拒绝，报出目标属性与处理器名。框架用单个 `ReversibleCommand` 包装这次 `set`，在 `execute` 内执行处理器，复用受校验的属性命令逐次写入，并记录每次写入的逆命令与失败回滚动作。`execute` 成功返回后历史栈才登记整个逆命令批次；undo/redo 直接执行生成的批次。若写入部分属性后抛错，立即按逆序回滚，保留两栈和已提交事件状态，且不执行默认处理。用测试处理器覆盖多次写入与中途抛错。
 2. **`box` 的读回、反馈和不变量**。区分逻辑类型 `box` 与 SVG 标签 `g`，保存使用 `data-kind="box"`。读取时先检查整份 XML 的显式 id，再按子树自底向上物化。已安装插件时，`box` 要求 `<id>-rect` 与 `<id>-label` 是类型正确的直接子节点，可以有额外子节点；缺失或类型错误则拒绝整个 `read`，保留原文档。未安装时按 `g` 读取并保留标记；重复 id 一律拒绝。创建时由 provider 组装分离子树，再通过现有全子树 id 校验一次挂载。通用容器策略保护必需部件的归属，覆盖 `delete`、`addto` 与 `group` 的迁移；同父调整顺序、迁移或删除整个 box 合法，`ungroup` 根据容器能力拒绝。框架重构阶段提供通用的显示反馈能力，分别支持命令反馈 `box#id` 与树行 `g#id`，默认实现保留一期原文；一期 §6.1 B 的特殊反馈由 `box` 提供，移动撤销仍写回原数值。子部件通过公开创建能力构造，独立测试可注入替身 provider。
 3. **dirty 与树标签**。采用「自上次成功保存、读取或初始化以来发生过编辑」的语义。新建节点立即标记，子部件修改标记自身和可见祖先，根行也标记。删除、重排和跨容器移动标记受影响的父级，画布尺寸变化标记根。undo 回到保存内容时仍标记。框架用会话私有的 `DocumentChanges` 从成功执行的命令结果追踪受影响 id，通过 `TreeRow.changedSinceBaseline` 给标签只读事实，因此 `modified-star` 可实现为无状态类。失败和查询不改变标记。按注册顺序拼接，每个标签前加一个空格，演示中先注册 `(box)` 再注册 `modified-star`，同一行显示 `(box) *`。
-4. **插件装配与校验时机**。无 `--config` 时由顶层装配代码选择可选插件，传入 `--config` 时按文件数组选择；一期内置始终先装。两条路径都把插件、同一份 `package.json` 清单和 `options` 交给同一个装配器，后者把 `options` 传给 `activate`。激活期间只写暂存注册，校验四类名称集合与清单一致，并检查暂存项及已装项重名，全部成功才发布。失败清掉当前插件暂存项，保留其他插件，继续加载。无效配置仅启用内置能力，`enabled: false` 跳过解析。配置的相对路径以文件目录为基准，拟用 Node `createRequire` 锚定解析上下文，再用 `import()` 求值解析出的入口；插件包须提供 Node 20 可解析的包根入口，例如 `main` 或 `exports.default`。解析与求值分开，以区分顶层未找到和依赖失败。固定测试逐项核对缺包、无默认导出、清单不匹配、激活异常、重复注册、无效配置、依赖缺失与后续插件可用。[Node 模块文档](https://nodejs.org/download/release/v20.19.0/docs/api/esm.html)
+4. **插件装配与校验时机**. 无参数时提供一期能力, `--plugins` 启用代码装配, `--config <file>` 按配置数组选择. 一期内置始终先装. 两条扩展装配路径都经 `PluginInstaller.install` 和 `ExtensionRegistry.activate`, 以同一清单核对四类暂存注册的名称集合, 成功后发布. 失败回滚当前插件, 保留已成功插件并继续. 模块解析与求值分开, 依赖缺失或模块求值抛错归入激活失败. 对包名, `ModuleResolver.resolve` 在 Node 子进程中调用带父 URL 的 ESM 解析, 支持 import-only exports. 相对目录读取自身 package.json 的 main 入口. L01-L10 覆盖各路径.
 
 ### 实施节点与验收
 
@@ -459,6 +459,58 @@ Optional --> API
 | 5 · 树标签 | 两种标签按相同顺序同时加载。独立验证编辑、保存、再编辑、undo 及失败分支；无标签时与一期树输出逐字节一致。 |
 | 6 · 收尾 | 固定输入、插件顺序、options、初始文件和工作目录，双装配逐字节比较基础会话、box 会话、stats/dir 会话。命令、期望输出和 SVG 文件分开，`dir` 比较日志写在被列目录之外。完成扩展点清单、架构图、ADR、运行证据和 `docs/metrics/`；指标脚本从 Git 历史生成 `final` 到最终提交的文件、行数和圈复杂度差异，最终用 `p2` 复验。按用户明确要求执行各节点提交、标签和远程操作。 |
 
-可选插件按独立包交付，编译或打包时将 `package.json` 清单与实际可加载的 JS 入口一并放入包。配置示例和测试使用包名或相对于配置文件的实际包目录，演示时从固定工作目录传入配置文件的绝对路径。
+### 装配、配置与错误契约
 
-**本轮验证。** [P01–P10 固定测试](../tests/plugin-extension-points.test.mjs)和 118 项一期回归全部通过。另用同一份含 `help`、文档读入、编辑、撤销重做、`tree`、`show` 和错误命令的会话对比重构前后的已编译 CLI，标准输出与标准错误逐字节相同。`final` 对照、配置清单校验及 Git 历史指标留在对应验收节点。
+根目录运行 `npm run build` 后, `node dist/main.js` 为一期基线, `node dist/main.js --plugins` 为代码装配, `node dist/main.js --config plugins.config.json` 为配置装配. 代码装配只有 `src/host/CodePlugins.ts` 静态引用可选插件. 配置加载器没有插件名称映射.
+
+`plugins.config.json` 的根对象包含 `plugins` 数组. 每项提供 `module`, 可选 `enabled` 和 `options`. 按数组顺序加载, `enabled: false` 完全跳过. 相对路径以配置文件目录为基准, 包名按该配置位置的 Node ESM 规则解析. `options` 原样传给插件. box 的选项为 `{ "fill": "#f5a623" }`, 缺省填充为 `#4a90d9`; stats、dir 和 modified-star 使用其默认行为.
+
+源码插件目录分别有 package.json, main 指向 `dist/plugins/<package>/<Plugin>.js`. 在本仓库中应先构建再启动. 插件实现仅引用公共插件 API 和自身模块, dir 的 Node 适配器另引用 Node 文件系统. 独立发布时需将编译入口、清单和公共内核依赖一同分发.
+
+| 失败类型 | 输出及后续行为 |
+|---|---|
+| 模块未找到 | `error: plugin not found: <module>`, 继续后续加载 |
+| 缺少默认导出 | `error: plugin has no default export: <module>`, 继续 |
+| 清单不匹配 | `error: plugin manifest mismatch: <name> (declared: ..., registered: ...)`, 丢弃该插件全部暂存注册 |
+| 激活或模块求值失败 | `error: plugin failed to activate: <name> (<reason>)`, 保留已成功插件 |
+| 重复注册 | `error: duplicate registration: <category>/<name>`, 拒绝当前整批注册 |
+| 配置语法或结构无效 | `error: invalid plugin config`, 以一期内置能力启动 |
+
+插件默认导出类实例. 激活、属性处理和树标签均为同步契约, 命令执行允许 Promise. 清单的 contributes 支持 shapes、commands、decorators、attributes 四类字符串名称数组, 缺省为空, 同类名称唯一. 配置激活和代码激活均在相同注册事务内校验清单.
+
+### dir 的适配器
+
+`DirCommand` 是 Client, `DirectoryAccess` 是 Target, `NodeDirectoryAdapter` 是 Adapter, Node 的 `fs.readdir` 和 `process.cwd` 是 Adaptee. 接口将目录项转换为只读的名称和目录标记, 命令只负责排序与展示. 单元测试注入 `DirectoryFixture`, 集成测试使用临时目录.
+
+dir 列出进程当前目录的直接子项, 包含隐藏项. 目录在前, 每组按 UTF-16 码元顺序比较名称, 输出稳定. 符号链接、套接字等特殊项使用 `[FILE]`, 不跟随目标. 空目录输出 `(empty directory)`, 读取失败由命令报告目标路径. 查询过程通过目录接口完成, 不调用文档或历史的写操作. C01-C04 验证独立行为、真实文件系统及成功/失败后的文档、dirty 与两栈保持.
+
+### 固定会话与 OCP 证据
+
+三组输入分别为 [一期完整会话](transcript/cli-1.txt)、[box 流程图](transcript/cli-box.txt)和 [stats/dir 会话](transcript/plugins.txt). 输入只含命令和注释, 同目录的 stdout/stderr 文件保存独立的预期输出. `tests/assembly-transcripts.test.mjs` 在固定临时目录比较 A/B 两种装配及预期输出. dir 会话的保存文件位于被列目录之外, 输出捕获在进程内完成.
+
+一期预期来自 `final` 标签对应的已编译 CLI. `tools/VerifyHistorySessions.mjs` 检查 final 工作树和 A 演示分支工作树的提交身份, 再执行真实 CLI 对照预期. [历史会话证据](../docs/metrics/history-sessions.json)保存具体提交与比较结果. 基础输出沿用 final 的具体空格和反馈文本, box 的专用反馈由插件实现.
+
+两个 box 接入提交共用父提交 `b52d6e3`. 配置方式为 `codex/box-config-demo` 的 `70dcdc2`, 只新增 box 插件、配置和测试. 代码方式为 `codex/box-code-demo` 的 `192f9ba`, 新增同一个插件和测试, 仅修改顶层 CodePlugins 装配文件. `tools/VerifyPluginChanges.mjs` 检查受保护路径在父提交和目标提交均存在, 再验证内核、加载器和既有插件差异为空, 并检查全部运行代码变动符合相应方式的范围.
+
+```powershell
+node tools/VerifyPluginChanges.mjs
+# 创建相应工作树并执行 tsc -p tsconfig.json 后可运行历史会话核对.
+node tools/VerifyHistorySessions.mjs
+```
+
+### 指标、测试与验收状态
+
+`tools/MetricsReport.mjs` 从 Git 历史读取源码, 生成文件职责清单、物理行数及圈复杂度. `docs/metrics/framework/` 保存首次框架节点, `docs/metrics/current/` 保存当前阶段相对 final 的结果. 数字全部由脚本产生, VS Code 扩展单列, 依赖包、测试、构建产物和文档不计入 CLI 增量.
+
+复杂度以有函数体的函数或方法为基础单位, 再累计 if、条件表达式、case、循环、catch 和短路运算符. CSV 中的职责根据类名及目录分类生成. 报告记录源代码树标识, 因此后续仅添加报告或截图不会改变 CLI 源码统计. 脚本使用现有 TypeScript 编译器 API; 默认可发现 VS Code 随附的 API, 也可设置 `TYPESCRIPT_MODULE` 指向相应 typescript.js.
+
+```powershell
+npm test
+npm run metrics -- final HEAD docs/metrics/current
+# 最终截图和提交完成并创建不可移动的 p2 后, 对 p2 重新生成报告.
+npm run metrics -- final p2 docs/metrics/p2
+```
+
+当前 CLI 的 156 项测试通过, 包括一期回归、四个扩展点、加载器 L01-L10、命令插件 C01-C05、box B01-B07、树标签 T01-T03 和三组双装配会话. VS Code 扩展已有 9 项固定测试和 H01-H04 宿主测试通过的记录.
+
+源码实现、配置装配、正式插件、固定会话、历史兼容性和 OCP 差异证据均已完成. 两张 VS Code 实机截图仍受工具权限阻挡. 用户已批准本轮本地 Git 操作, 最终 p2 标签按需求保留到截图等交付物齐备的最终提交, 创建后不移动. 远程推送单独确认.

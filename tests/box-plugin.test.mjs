@@ -128,7 +128,8 @@ test("B06 malformed and duplicate-id box input preserves document and redo histo
 
 test("B07 creation validates complete arguments and derived coordinates", () => {
   const provider = new BoxShapeProvider((type, id, args) => new PartDouble(type, id, args));
-  for (const args of [[], ["0", "0", "-1", "2", "x"], ["NaN", "0", "1", "2", "x"]]) {
+  for (const args of [[], ["0", "0", "-1", "2", "x"], ["NaN", "0", "1", "2", "x"],
+    ["0", String(Number.MAX_VALUE), "1", String(Number.MAX_VALUE), "x"]]) {
     assert.throws(() => provider.create("n1", args));
   }
 });
