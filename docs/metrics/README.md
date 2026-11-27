@@ -4,6 +4,7 @@ Reports are generated from committed source by `tools/MetricsReport.mjs`. Each r
 
 - `framework/` compares `final` with the framework registration/configuration milestone.
 - `current/` compares `final` with the current implemented CLI.
+- `p2/` records the final CLI source tree used by the immutable `p2` submission tag.
 - `history-sessions.json` records execution of the `final` CLI and the independent code-assembly box demonstration against fixed expected output.
 
 Run from repository root.
@@ -18,4 +19,4 @@ The history session checker uses built worktrees at `.tools/phase1-final` and `.
 
 The metrics generator resolves all refs to commits and reads files using Git. CLI files are grouped as kernel, assembly and plugins. VS Code extension source is reported separately. Dependencies, generated files, tests and documentation are excluded. Physical lines include comments and internal blank lines, excluding trailing blank lines. Complexity counts a base for each implemented function/method plus branches, loops, catches and short-circuit expressions. This is the same calculation for both refs.
 
-The JSON report records the compared source tree identifiers. Once all submission evidence is complete and `p2` exists, regenerate with `final p2 docs/metrics/p2`. The immutable tag belongs on the final submission commit.
+The JSON report records the compared source tree identifiers. Regenerate the final report with `final p2 docs/metrics/p2`. The immutable tag belongs on the final submission commit. Reports are committed with source-tree identifiers, avoiding a self-reference to the enclosing documentation commit.

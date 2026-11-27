@@ -1,0 +1,838 @@
+{
+  "base": "final",
+  "target": "p2",
+  "baseCommit": "ff44716039038c1d68bb2e6cc20b693a04bfb8b1",
+  "baseSourceTree": "05a5cde4b36fe8b4c9217ff67a26bb636799889a",
+  "targetSourceTree": "84ab2aa20317beba0803c84a37cc35f6a73c214b",
+  "method": "Physical non-trailing lines; AST function bases + branch/loop/catch/short-circuit decisions; VS Code excluded from CLI totals.",
+  "summary": [
+    {
+      "category": "kernel",
+      "before": {
+        "files": 56,
+        "lines": 1325,
+        "complexity": 361
+      },
+      "after": {
+        "files": 48,
+        "lines": 1407,
+        "complexity": 421
+      },
+      "complexityDelta": 60
+    },
+    {
+      "category": "assembly",
+      "before": {
+        "files": 8,
+        "lines": 253,
+        "complexity": 103
+      },
+      "after": {
+        "files": 15,
+        "lines": 471,
+        "complexity": 170
+      },
+      "complexityDelta": 67
+    },
+    {
+      "category": "plugins",
+      "before": {
+        "files": 0,
+        "lines": 0,
+        "complexity": 0
+      },
+      "after": {
+        "files": 42,
+        "lines": 639,
+        "complexity": 169
+      },
+      "complexityDelta": 169
+    },
+    {
+      "category": "vscode",
+      "before": {
+        "files": 0,
+        "lines": 0,
+        "complexity": 0
+      },
+      "after": {
+        "files": 5,
+        "lines": 137,
+        "complexity": 43
+      },
+      "complexityDelta": 43
+    }
+  ],
+  "files": [
+    {
+      "path": "src/application/CommandContext.ts",
+      "category": "kernel",
+      "responsibility": "CommandContext: Coordinate editor state, command history or presentation",
+      "lines": 7,
+      "complexity": 1
+    },
+    {
+      "path": "src/application/CommandDispatcher.ts",
+      "category": "kernel",
+      "responsibility": "CommandDispatcher: Coordinate editor state, command history or presentation",
+      "lines": 20,
+      "complexity": 7
+    },
+    {
+      "path": "src/application/CommandHistory.ts",
+      "category": "kernel",
+      "responsibility": "CommandHistory: Coordinate editor state, command history or presentation",
+      "lines": 64,
+      "complexity": 13
+    },
+    {
+      "path": "src/application/DocumentChanges.ts",
+      "category": "kernel",
+      "responsibility": "DocumentChanges: Coordinate editor state, command history or presentation",
+      "lines": 25,
+      "complexity": 11
+    },
+    {
+      "path": "src/application/DocumentPresenter.ts",
+      "category": "kernel",
+      "responsibility": "DocumentPresenter: Coordinate editor state, command history or presentation",
+      "lines": 66,
+      "complexity": 26
+    },
+    {
+      "path": "src/application/EditResult.ts",
+      "category": "kernel",
+      "responsibility": "EditResult: Coordinate editor state, command history or presentation",
+      "lines": 22,
+      "complexity": 4
+    },
+    {
+      "path": "src/application/EditorSession.ts",
+      "category": "kernel",
+      "responsibility": "EditorSession: Coordinate editor state, command history or presentation",
+      "lines": 119,
+      "complexity": 34
+    },
+    {
+      "path": "src/application/SvgReadResult.ts",
+      "category": "kernel",
+      "responsibility": "SvgReadResult: Coordinate editor state, command history or presentation",
+      "lines": 9,
+      "complexity": 1
+    },
+    {
+      "path": "src/application/SvgRepository.ts",
+      "category": "kernel",
+      "responsibility": "SvgRepository: Coordinate editor state, command history or presentation",
+      "lines": 7,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/cliCommands/CommandArguments.ts",
+      "category": "kernel",
+      "responsibility": "CommandArguments: Coordinate editor state, command history or presentation",
+      "lines": 21,
+      "complexity": 11
+    },
+    {
+      "path": "src/application/commands/AddToCommand.ts",
+      "category": "kernel",
+      "responsibility": "AddToCommand: Execute a command and enforce its edit or query contract",
+      "lines": 35,
+      "complexity": 6
+    },
+    {
+      "path": "src/application/commands/CommandBatch.ts",
+      "category": "kernel",
+      "responsibility": "CommandBatch: Coordinate editor state, command history or presentation",
+      "lines": 46,
+      "complexity": 12
+    },
+    {
+      "path": "src/application/commands/CreateCommand.ts",
+      "category": "kernel",
+      "responsibility": "CreateCommand: Execute a command and enforce its edit or query contract",
+      "lines": 37,
+      "complexity": 5
+    },
+    {
+      "path": "src/application/commands/DeleteCommand.ts",
+      "category": "kernel",
+      "responsibility": "DeleteCommand: Execute a command and enforce its edit or query contract",
+      "lines": 20,
+      "complexity": 3
+    },
+    {
+      "path": "src/application/commands/GeometryCommandBatch.ts",
+      "category": "kernel",
+      "responsibility": "GeometryCommandBatch: Coordinate editor state, command history or presentation",
+      "lines": 13,
+      "complexity": 4
+    },
+    {
+      "path": "src/application/commands/GroupCommand.ts",
+      "category": "kernel",
+      "responsibility": "GroupCommand: Execute a command and enforce its edit or query contract",
+      "lines": 39,
+      "complexity": 14
+    },
+    {
+      "path": "src/application/commands/HandledAttributeCommand.ts",
+      "category": "kernel",
+      "responsibility": "HandledAttributeCommand: Execute a command and enforce its edit or query contract",
+      "lines": 77,
+      "complexity": 26
+    },
+    {
+      "path": "src/application/commands/MoveCommand.ts",
+      "category": "kernel",
+      "responsibility": "MoveCommand: Execute a command and enforce its edit or query contract",
+      "lines": 20,
+      "complexity": 5
+    },
+    {
+      "path": "src/application/commands/ReversibleCommand.ts",
+      "category": "kernel",
+      "responsibility": "ReversibleCommand: Execute a command and enforce its edit or query contract",
+      "lines": 9,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/commands/ScaleCommand.ts",
+      "category": "kernel",
+      "responsibility": "ScaleCommand: Execute a command and enforce its edit or query contract",
+      "lines": 21,
+      "complexity": 5
+    },
+    {
+      "path": "src/application/commands/SetPropertyCommand.ts",
+      "category": "kernel",
+      "responsibility": "SetPropertyCommand: Execute a command and enforce its edit or query contract",
+      "lines": 29,
+      "complexity": 4
+    },
+    {
+      "path": "src/application/commands/UngroupCommand.ts",
+      "category": "kernel",
+      "responsibility": "UngroupCommand: Execute a command and enforce its edit or query contract",
+      "lines": 25,
+      "complexity": 7
+    },
+    {
+      "path": "src/application/plugins/AttributeHandler.ts",
+      "category": "kernel",
+      "responsibility": "AttributeHandler: Apply domain attribute behavior through the edit transaction",
+      "lines": 9,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/AttributeTransaction.ts",
+      "category": "kernel",
+      "responsibility": "AttributeTransaction: Define plugin contracts or read-only application views",
+      "lines": 4,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/Command.ts",
+      "category": "kernel",
+      "responsibility": "Command: Execute a command and enforce its edit or query contract",
+      "lines": 8,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/CommandSession.ts",
+      "category": "kernel",
+      "responsibility": "CommandSession: Define plugin contracts or read-only application views",
+      "lines": 24,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/ExtensionRegistry.ts",
+      "category": "kernel",
+      "responsibility": "ExtensionRegistry: Define plugin contracts or read-only application views",
+      "lines": 86,
+      "complexity": 40
+    },
+    {
+      "path": "src/application/plugins/Plugin.ts",
+      "category": "kernel",
+      "responsibility": "Plugin: Register the package contributions",
+      "lines": 5,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/PluginContext.ts",
+      "category": "kernel",
+      "responsibility": "PluginContext: Define plugin contracts or read-only application views",
+      "lines": 14,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/PluginManifest.ts",
+      "category": "kernel",
+      "responsibility": "PluginManifest: Define plugin contracts or read-only application views",
+      "lines": 9,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/ShapeView.ts",
+      "category": "kernel",
+      "responsibility": "ShapeView: Define plugin contracts or read-only application views",
+      "lines": 16,
+      "complexity": 9
+    },
+    {
+      "path": "src/application/plugins/TreeDecorator.ts",
+      "category": "kernel",
+      "responsibility": "TreeDecorator: Supply optional tree-line tags",
+      "lines": 6,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/TreeRow.ts",
+      "category": "kernel",
+      "responsibility": "TreeRow: Define plugin contracts or read-only application views",
+      "lines": 7,
+      "complexity": 0
+    },
+    {
+      "path": "src/application/plugins/index.ts",
+      "category": "kernel",
+      "responsibility": "module: Expose the public module API",
+      "lines": 21,
+      "complexity": 0
+    },
+    {
+      "path": "src/cli/CliRepl.ts",
+      "category": "assembly",
+      "responsibility": "CliRepl: Adapt terminal input or output",
+      "lines": 29,
+      "complexity": 7
+    },
+    {
+      "path": "src/cli/ConsolePresenter.ts",
+      "category": "assembly",
+      "responsibility": "ConsolePresenter: Adapt terminal input or output",
+      "lines": 12,
+      "complexity": 5
+    },
+    {
+      "path": "src/cli/Tokenizer.ts",
+      "category": "assembly",
+      "responsibility": "Tokenizer: Adapt terminal input or output",
+      "lines": 21,
+      "complexity": 13
+    },
+    {
+      "path": "src/domain/ContainerShape.ts",
+      "category": "kernel",
+      "responsibility": "ContainerShape: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 20,
+      "complexity": 6
+    },
+    {
+      "path": "src/domain/GeometricShape.ts",
+      "category": "kernel",
+      "responsibility": "GeometricShape: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 34,
+      "complexity": 12
+    },
+    {
+      "path": "src/domain/GeometryTarget.ts",
+      "category": "kernel",
+      "responsibility": "GeometryTarget: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 7,
+      "complexity": 0
+    },
+    {
+      "path": "src/domain/Placement.ts",
+      "category": "kernel",
+      "responsibility": "Placement: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 6,
+      "complexity": 0
+    },
+    {
+      "path": "src/domain/PropertyDefinition.ts",
+      "category": "kernel",
+      "responsibility": "PropertyDefinition: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 10,
+      "complexity": 0
+    },
+    {
+      "path": "src/domain/PropertyValue.ts",
+      "category": "kernel",
+      "responsibility": "module: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 1,
+      "complexity": 0
+    },
+    {
+      "path": "src/domain/Shape.ts",
+      "category": "kernel",
+      "responsibility": "Shape: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 88,
+      "complexity": 40
+    },
+    {
+      "path": "src/domain/ShapeContainer.ts",
+      "category": "kernel",
+      "responsibility": "ShapeContainer: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 48,
+      "complexity": 21
+    },
+    {
+      "path": "src/domain/ShapeFactory.ts",
+      "category": "kernel",
+      "responsibility": "ShapeFactory: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 53,
+      "complexity": 23
+    },
+    {
+      "path": "src/domain/ShapeProperties.ts",
+      "category": "kernel",
+      "responsibility": "ShapeProperties: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 13,
+      "complexity": 6
+    },
+    {
+      "path": "src/domain/ShapeProvider.ts",
+      "category": "kernel",
+      "responsibility": "ShapeProvider: Create or restore shapes through the provider contract",
+      "lines": 11,
+      "complexity": 0
+    },
+    {
+      "path": "src/domain/SvgDocument.ts",
+      "category": "kernel",
+      "responsibility": "SvgDocument: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 162,
+      "complexity": 65
+    },
+    {
+      "path": "src/domain/SvgShapeInput.ts",
+      "category": "kernel",
+      "responsibility": "SvgShapeInput: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 10,
+      "complexity": 0
+    },
+    {
+      "path": "src/domain/TemporaryContainer.ts",
+      "category": "kernel",
+      "responsibility": "TemporaryContainer: Encapsulate shape, geometry, containment or document invariants",
+      "lines": 4,
+      "complexity": 0
+    },
+    {
+      "path": "src/host/CliAssembly.ts",
+      "category": "assembly",
+      "responsibility": "CliAssembly: Compose or load runtime dependencies and plugin instances",
+      "lines": 23,
+      "complexity": 4
+    },
+    {
+      "path": "src/host/CliStartup.ts",
+      "category": "assembly",
+      "responsibility": "CliStartup: Compose or load runtime dependencies and plugin instances",
+      "lines": 18,
+      "complexity": 7
+    },
+    {
+      "path": "src/host/CodePlugins.ts",
+      "category": "assembly",
+      "responsibility": "CodePlugins: Compose or load runtime dependencies and plugin instances",
+      "lines": 17,
+      "complexity": 1
+    },
+    {
+      "path": "src/host/ModuleResolver.ts",
+      "category": "assembly",
+      "responsibility": "ModuleResolver: Compose or load runtime dependencies and plugin instances",
+      "lines": 21,
+      "complexity": 2
+    },
+    {
+      "path": "src/host/PluginInstaller.ts",
+      "category": "assembly",
+      "responsibility": "PluginInstaller: Compose or load runtime dependencies and plugin instances",
+      "lines": 21,
+      "complexity": 5
+    },
+    {
+      "path": "src/host/PluginLoader.ts",
+      "category": "assembly",
+      "responsibility": "PluginEntry: Compose or load runtime dependencies and plugin instances",
+      "lines": 98,
+      "complexity": 51
+    },
+    {
+      "path": "src/index.ts",
+      "category": "assembly",
+      "responsibility": "module: Expose the public module API",
+      "lines": 25,
+      "complexity": 0
+    },
+    {
+      "path": "src/infrastructure/svg/FileSvgRepository.ts",
+      "category": "assembly",
+      "responsibility": "FileSvgRepository: Adapt XML or file storage to the application",
+      "lines": 34,
+      "complexity": 7
+    },
+    {
+      "path": "src/infrastructure/svg/SvgElement.ts",
+      "category": "assembly",
+      "responsibility": "SvgElement: Adapt XML or file storage to the application",
+      "lines": 20,
+      "complexity": 9
+    },
+    {
+      "path": "src/infrastructure/svg/SvgReader.ts",
+      "category": "assembly",
+      "responsibility": "SvgReader: Adapt XML or file storage to the application",
+      "lines": 89,
+      "complexity": 41
+    },
+    {
+      "path": "src/infrastructure/svg/SvgWriter.ts",
+      "category": "assembly",
+      "responsibility": "SvgWriter: Adapt XML or file storage to the application",
+      "lines": 40,
+      "complexity": 18
+    },
+    {
+      "path": "src/main.ts",
+      "category": "assembly",
+      "responsibility": "module: Coordinate editor state, command history or presentation",
+      "lines": 3,
+      "complexity": 0
+    },
+    {
+      "path": "src/plugins/box/Box.ts",
+      "category": "plugins",
+      "responsibility": "Box: Implement the package domain behavior or filesystem port",
+      "lines": 20,
+      "complexity": 10
+    },
+    {
+      "path": "src/plugins/box/BoxContainer.ts",
+      "category": "plugins",
+      "responsibility": "BoxContainer: Implement the package domain behavior or filesystem port",
+      "lines": 9,
+      "complexity": 3
+    },
+    {
+      "path": "src/plugins/box/BoxFillHandler.ts",
+      "category": "plugins",
+      "responsibility": "BoxFillHandler: Apply domain attribute behavior through the edit transaction",
+      "lines": 13,
+      "complexity": 5
+    },
+    {
+      "path": "src/plugins/box/BoxLabelHandler.ts",
+      "category": "plugins",
+      "responsibility": "BoxLabelHandler: Apply domain attribute behavior through the edit transaction",
+      "lines": 13,
+      "complexity": 4
+    },
+    {
+      "path": "src/plugins/box/BoxPlugin.ts",
+      "category": "plugins",
+      "responsibility": "BoxPlugin: Register the package contributions",
+      "lines": 23,
+      "complexity": 6
+    },
+    {
+      "path": "src/plugins/box/BoxShapeProvider.ts",
+      "category": "plugins",
+      "responsibility": "BoxShapeProvider: Create or restore shapes through the provider contract",
+      "lines": 40,
+      "complexity": 21
+    },
+    {
+      "path": "src/plugins/box/BoxTypeDecorator.ts",
+      "category": "plugins",
+      "responsibility": "BoxTypeDecorator: Supply optional tree-line tags",
+      "lines": 6,
+      "complexity": 2
+    },
+    {
+      "path": "src/plugins/builtin/BuiltinCommands.ts",
+      "category": "plugins",
+      "responsibility": "BuiltinCommands: Implement the package domain behavior or filesystem port",
+      "lines": 36,
+      "complexity": 3
+    },
+    {
+      "path": "src/plugins/builtin/BuiltinShapeProvider.ts",
+      "category": "plugins",
+      "responsibility": "BuiltinShapeProvider: Create or restore shapes through the provider contract",
+      "lines": 45,
+      "complexity": 19
+    },
+    {
+      "path": "src/plugins/builtin/BuiltinShapes.ts",
+      "category": "plugins",
+      "responsibility": "BuiltinShapes: Implement the package domain behavior or filesystem port",
+      "lines": 20,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/AddToCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "AddToCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 14,
+      "complexity": 2
+    },
+    {
+      "path": "src/plugins/builtin/commands/CanvasCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "CanvasCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 12,
+      "complexity": 2
+    },
+    {
+      "path": "src/plugins/builtin/commands/CreateCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "CreateCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 19,
+      "complexity": 3
+    },
+    {
+      "path": "src/plugins/builtin/commands/DeleteCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "DeleteCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 12,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/ExitCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "ExitCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 11,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/GroupCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "GroupCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 13,
+      "complexity": 2
+    },
+    {
+      "path": "src/plugins/builtin/commands/HelpCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "HelpCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 10,
+      "complexity": 2
+    },
+    {
+      "path": "src/plugins/builtin/commands/HistoryCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "HistoryCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 13,
+      "complexity": 3
+    },
+    {
+      "path": "src/plugins/builtin/commands/InitCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "InitCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 12,
+      "complexity": 3
+    },
+    {
+      "path": "src/plugins/builtin/commands/MoveCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "MoveCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 13,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/OrderCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "OrderCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 17,
+      "complexity": 3
+    },
+    {
+      "path": "src/plugins/builtin/commands/ReadCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "ReadCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 11,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/SaveCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "SaveCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 11,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/ScaleCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "ScaleCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 13,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/SetCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "SetCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 12,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/ShowCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "ShowCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 11,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/TreeCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "TreeCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 11,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/commands/UngroupCliCommand.ts",
+      "category": "plugins",
+      "responsibility": "UngroupCliCommand: Validate CLI arguments and invoke the corresponding use case",
+      "lines": 12,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/builtin/shapes/Circle.ts",
+      "category": "plugins",
+      "responsibility": "Circle: Implement the package domain behavior or filesystem port",
+      "lines": 12,
+      "complexity": 5
+    },
+    {
+      "path": "src/plugins/builtin/shapes/Ellipse.ts",
+      "category": "plugins",
+      "responsibility": "Ellipse: Implement the package domain behavior or filesystem port",
+      "lines": 15,
+      "complexity": 5
+    },
+    {
+      "path": "src/plugins/builtin/shapes/Group.ts",
+      "category": "plugins",
+      "responsibility": "Group: Implement the package domain behavior or filesystem port",
+      "lines": 6,
+      "complexity": 2
+    },
+    {
+      "path": "src/plugins/builtin/shapes/Line.ts",
+      "category": "plugins",
+      "responsibility": "Line: Implement the package domain behavior or filesystem port",
+      "lines": 15,
+      "complexity": 8
+    },
+    {
+      "path": "src/plugins/builtin/shapes/Rect.ts",
+      "category": "plugins",
+      "responsibility": "Rect: Implement the package domain behavior or filesystem port",
+      "lines": 20,
+      "complexity": 6
+    },
+    {
+      "path": "src/plugins/builtin/shapes/Text.ts",
+      "category": "plugins",
+      "responsibility": "Text: Implement the package domain behavior or filesystem port",
+      "lines": 23,
+      "complexity": 11
+    },
+    {
+      "path": "src/plugins/dir/DirCommand.ts",
+      "category": "plugins",
+      "responsibility": "DirCommand: Execute a command and enforce its edit or query contract",
+      "lines": 23,
+      "complexity": 11
+    },
+    {
+      "path": "src/plugins/dir/DirPlugin.ts",
+      "category": "plugins",
+      "responsibility": "DirPlugin: Register the package contributions",
+      "lines": 12,
+      "complexity": 2
+    },
+    {
+      "path": "src/plugins/dir/DirectoryAccess.ts",
+      "category": "plugins",
+      "responsibility": "DirectoryEntry: Implement the package domain behavior or filesystem port",
+      "lines": 9,
+      "complexity": 0
+    },
+    {
+      "path": "src/plugins/dir/NodeDirectoryAdapter.ts",
+      "category": "plugins",
+      "responsibility": "NodeDirectoryAdapter: Implement the package domain behavior or filesystem port",
+      "lines": 10,
+      "complexity": 3
+    },
+    {
+      "path": "src/plugins/modified-star/ModifiedStarDecorator.ts",
+      "category": "plugins",
+      "responsibility": "ModifiedStarDecorator: Supply optional tree-line tags",
+      "lines": 6,
+      "complexity": 2
+    },
+    {
+      "path": "src/plugins/modified-star/ModifiedStarPlugin.ts",
+      "category": "plugins",
+      "responsibility": "ModifiedStarPlugin: Register the package contributions",
+      "lines": 8,
+      "complexity": 1
+    },
+    {
+      "path": "src/plugins/stats/StatsCommand.ts",
+      "category": "plugins",
+      "responsibility": "StatsCommand: Execute a command and enforce its edit or query contract",
+      "lines": 20,
+      "complexity": 8
+    },
+    {
+      "path": "src/plugins/stats/StatsPlugin.ts",
+      "category": "plugins",
+      "responsibility": "StatsPlugin: Register the package contributions",
+      "lines": 8,
+      "complexity": 1
+    },
+    {
+      "path": "vscode-extension/src/SvgDocumentSymbolProvider.ts",
+      "category": "vscode",
+      "responsibility": "SvgDocumentSymbolProvider: Create or restore shapes through the provider contract",
+      "lines": 28,
+      "complexity": 7
+    },
+    {
+      "path": "vscode-extension/src/SvgFileDecorationProvider.ts",
+      "category": "vscode",
+      "responsibility": "SvgFileDecorationProvider: Create or restore shapes through the provider contract",
+      "lines": 35,
+      "complexity": 12
+    },
+    {
+      "path": "vscode-extension/src/SvgOutlineNode.ts",
+      "category": "vscode",
+      "responsibility": "SvgOutlineNode: Provide SVG outline or decoration behavior to VS Code",
+      "lines": 28,
+      "complexity": 10
+    },
+    {
+      "path": "vscode-extension/src/SvgOutlineParser.ts",
+      "category": "vscode",
+      "responsibility": "SvgOutlineParser: Provide SVG outline or decoration behavior to VS Code",
+      "lines": 32,
+      "complexity": 12
+    },
+    {
+      "path": "vscode-extension/src/extension.ts",
+      "category": "vscode",
+      "responsibility": "module: Provide SVG outline or decoration behavior to VS Code",
+      "lines": 14,
+      "complexity": 2
+    }
+  ]
+}

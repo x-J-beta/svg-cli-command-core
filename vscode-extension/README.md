@@ -44,11 +44,11 @@ For F5 debugging, open `vscode-extension/` itself as the workspace, then select 
 
 Set `SVG_EXTENSION_TEST_PATH` to the installed extension directory to run the same scenarios against the installed VSIX runtime.
 
-On 2026-11-27, full TypeScript compilation, all nine fixed tests and H01-H04 passed. The user supplied two real VS Code screenshots showing the Outline selection of a leaf and a container with the corresponding source lines highlighted. The screenshots also show the file tab badge. An expanded Explorer file list comparing SVG files, other files and directories remains to be captured.
+On 2026-11-27, full TypeScript compilation, all nine fixed tests and H01-H04 passed. The user supplied three real VS Code screenshots showing Explorer file badge comparisons and Outline selection of a leaf and a container with the corresponding source lines highlighted.
 
 The [leaf selection screenshot](../docs/images/vscode-svg-outline-leaf.png) selects `rect#process` at line 9. The [container selection screenshot](../docs/images/vscode-svg-outline-group.png) selects `g#node1` at line 4. These screenshots use `examples/flowchart.svg` at repository root.
 
-For the remaining badge screenshot, expand the examples folder and show `outline.svg` beside a text file and a directory. Save the observed image as `docs/images/vscode-svg-badge.png` at repository root. Editing and malformed-input recovery are covered by the fixed and host tests described above.
+The [Explorer badge screenshot](../docs/images/vscode-svg-badge.png) shows `flowchart.svg` and `other.svg` with `[]`, while `flowchart.commands.txt` and the examples folder heading have no badge. It also shows `line#arrow1` selected at source line 12. Editing and malformed-input recovery are covered by the fixed and host tests described above.
 
 ## Host responsibilities and design patterns
 
